@@ -2,32 +2,46 @@ import axios from 'axios'
 
 // Cấu hình API
 const API_CONFIG = {
-  API_BASE_URL: 'https://chatbotsdtapi.onrender.com/api',
+  API_BASE_URL: 'https://phongthuybotbackend.onrender.com/api',
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    LOGOUT: '/auth/logout',
-    VERIFY_TOKEN: '/auth/me',
-    CHANGE_PASSWORD: '/auth/change-password'
+    LOGIN: '/v2/auth/login',
+    REGISTER: '/v2/auth/register',
+    LOGOUT: '/v2/auth/logout',
+    VERIFY_TOKEN: '/v2/auth/me',
+    CHANGE_PASSWORD: '/v2/auth/change-password'
   },
   USER: {
-    PROFILE: '/users/profile',
-    UPDATE_PROFILE: '/users/profile',
-    REMAINING_QUESTIONS: '/payments/user/questions'
+    PROFILE: '/v2/auth/me',
+    UPDATE_PROFILE: '/v2/auth/update-profile',
+    REMAINING_QUESTIONS: '/v2/agent/query'
   },
   ANALYSIS: {
-    ANALYZE: '/analysis/analyze',
-    HISTORY: '/analysis/history',
-    FEEDBACK: '/analysis/feedback',
-    RECENT: '/analysis/recent',
-    QUESTION: '/analysis/question',
-    DELETE_HISTORY: '/analysis/history'
+    ANALYZE: '/v2/bat-cuc-linh-so/analyze',
+    HISTORY: '/v2/agent/query',
+    FEEDBACK: '/v2/agent/query',
+    RECENT: '/v2/agent/query',
+    QUESTION: '/v2/agent/chat',
+    STREAM: '/v2/agent/stream',
+    DELETE_HISTORY: '/v2/agent/query'
+  },
+  PHONE: {
+    ANALYZE: '/v2/bat-cuc-linh-so/phone'
+  },
+  CCCD: {
+    ANALYZE: '/v2/bat-cuc-linh-so/cccd'
+  },
+  PASSWORD: {
+    ANALYZE: '/v2/bat-cuc-linh-so/password'
+  },
+  BANK_ACCOUNT: {
+    ANALYZE: '/v2/bat-cuc-linh-so/bank-account',
+    SUGGEST: '/v2/bat-cuc-linh-so/suggest-bank-account'
   },
   PAYMENT: {
-    CREATE: '/payments/create',
-    HISTORY: '/payments/payment/history',
-    CALLBACK: '/payments/callback',
-    STATUS: '/payments/status'
+    CREATE: '/v2/payments/create',
+    HISTORY: '/v2/payments/history',
+    CALLBACK: '/v2/payments/callback',
+    STATUS: '/v2/payments/status'
   },
   REQUEST_TIMEOUT: 15000,
 }

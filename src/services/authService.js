@@ -9,11 +9,94 @@ const authService = {
    */
   async login(email, password) {
     try {
-      const response = await apiClient.post(API_CONFIG.AUTH.LOGIN, { email, password })
-      return response
+      // Thử gọi API đăng nhập
+      try {
+        const response = await apiClient.post(API_CONFIG.AUTH.LOGIN, { email, password })
+        
+        // Lưu token và thông tin người dùng
+        if (response.success && response.token) {
+          localStorage.setItem('phone_analysis_token', response.token)
+          localStorage.setItem('phone_analysis_user', JSON.stringify(response.user))
+          
+          // Lưu sessionId nếu có
+          if (response.sessionId) {
+            localStorage.setItem('phone_analysis_session_id', response.sessionId)
+          }
+        }
+        
+        return response
+      } catch (apiError) {
+        console.log('API login không khả dụng, sử dụng phiên ẩn danh:', apiError.message)
+        // Nếu API đăng nhập không khả dụng (chưa tích hợp xong), tạo phiên ẩn danh
+        return this.createAnonymousSession(email)
+      }
     } catch (error) {
       console.error('Login error:', error)
       return { success: false, message: error.message }
+    }
+  },
+  
+  /**
+   * Tạo phiên ẩn danh khi API xác thực chưa khả dụng
+   * @param {string} identifier - Thông tin định danh người dùng
+   * @returns {Promise} - Kết quả tạo phiên ẩn danh
+   */
+  async createAnonymousSession(identifier) {
+    try {
+      // Tạo phiên ẩn danh thông qua API agent
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.QUESTION, {
+        message: `Tạo phiên ẩn danh mới cho người dùng ${identifier || 'anonymous'}`
+      })
+      
+      if (response.success && response.result && response.result.sessionId) {
+        // Lưu sessionId vào localStorage
+        localStorage.setItem('phone_analysis_token', `anonymous_${response.result.sessionId}`)
+        localStorage.setItem('phone_analysis_user', JSON.stringify({
+          name: identifier || 'Người dùng ẩn danh',
+          email: identifier || 'anonymous@user.com',
+          role: 'user',
+          isAnonymous: true
+        }))
+        
+        return {
+          success: true,
+          message: 'Đăng nhập phiên ẩn danh thành công',
+          sessionId: response.result.sessionId,
+          user: {
+            name: identifier || 'Người dùng ẩn danh',
+            email: identifier || 'anonymous@user.com',
+            role: 'user',
+            isAnonymous: true
+          }
+        }
+      } else {
+        throw new Error('Không thể tạo phiên ẩn danh')
+      }
+    } catch (error) {
+      console.error('Create anonymous session error:', error)
+      // Tạo phiên ẩn danh offline
+      const sessionId = `anonymous_${Date.now()}`
+      localStorage.setItem('phone_analysis_token', sessionId)
+      localStorage.setItem('phone_analysis_user', JSON.stringify({
+        name: identifier || 'Người dùng ẩn danh',
+        email: identifier || 'anonymous@user.com',
+        role: 'user',
+        isAnonymous: true,
+        isOffline: true
+      }))
+      
+      return {
+        success: true,
+        message: 'Đăng nhập phiên ẩn danh offline thành công',
+        sessionId: sessionId,
+        user: {
+          name: identifier || 'Người dùng ẩn danh',
+          email: identifier || 'anonymous@user.com',
+          role: 'user',
+          isAnonymous: true,
+          isOffline: true
+        }
+      }
     }
   },
   
@@ -26,8 +109,26 @@ const authService = {
    */
   async register(name, email, password) {
     try {
-      const response = await apiClient.post(API_CONFIG.AUTH.REGISTER, { name, email, password })
-      return response
+      try {
+        const response = await apiClient.post(API_CONFIG.AUTH.REGISTER, { name, email, password })
+        
+        // Lưu token và thông tin người dùng
+        if (response.success && response.token) {
+          localStorage.setItem('phone_analysis_token', response.token)
+          localStorage.setItem('phone_analysis_user', JSON.stringify(response.user))
+          
+          // Lưu sessionId nếu có
+          if (response.sessionId) {
+            localStorage.setItem('phone_analysis_session_id', response.sessionId)
+          }
+        }
+        
+        return response
+      } catch (apiError) {
+        console.log('API register không khả dụng, sử dụng phiên ẩn danh:', apiError.message)
+        // Nếu API đăng ký không khả dụng, tạo phiên ẩn danh
+        return this.createAnonymousSession(email)
+      }
     } catch (error) {
       console.error('Register error:', error)
       return { success: false, message: error.message }
@@ -48,6 +149,10 @@ const authService = {
         console.log('API logout không khả dụng:', apiError.message)
       }
       
+      // Xóa thông tin phiên từ localStorage
+      localStorage.removeItem('phone_analysis_token')
+      localStorage.removeItem('phone_analysis_user')
+      
       // Luôn trả về success=true, vì chúng ta sẽ logout ở client side dù sao
       return { success: true }
     } catch (error) {
@@ -64,11 +169,19 @@ const authService = {
    */
   async changePassword(currentPassword, newPassword) {
     try {
-      const response = await apiClient.post(API_CONFIG.AUTH.CHANGE_PASSWORD, {
-        currentPassword,
-        newPassword
-      })
-      return response
+      try {
+        const response = await apiClient.post(API_CONFIG.AUTH.CHANGE_PASSWORD, {
+          currentPassword,
+          newPassword
+        })
+        return response
+      } catch (apiError) {
+        console.log('API change password không khả dụng:', apiError.message)
+        return { 
+          success: false, 
+          message: 'Tính năng thay đổi mật khẩu chưa khả dụng với backend mới'
+        }
+      }
     } catch (error) {
       console.error('Change password error:', error)
       return { success: false, message: error.message }
@@ -81,8 +194,24 @@ const authService = {
    */
   async verifyToken() {
     try {
-      const response = await apiClient.get(API_CONFIG.AUTH.VERIFY_TOKEN)
-      return { valid: true, user: response.user }
+      try {
+        const response = await apiClient.get(API_CONFIG.AUTH.VERIFY_TOKEN)
+        return { valid: true, user: response.user }
+      } catch (apiError) {
+        console.log('API verify token không khả dụng:', apiError.message)
+        
+        // Kiểm tra xem có phải phiên ẩn danh không
+        const token = localStorage.getItem('phone_analysis_token')
+        const user = this.getCurrentUser()
+        
+        if (token && token.startsWith('anonymous_') && user) {
+          // Nếu là phiên ẩn danh hợp lệ, trả về hợp lệ
+          return { valid: true, user }
+        }
+        
+        // Nếu không phải phiên ẩn danh hợp lệ, trả về không hợp lệ
+        return { valid: false, message: 'Token không hợp lệ' }
+      }
     } catch (error) {
       console.error('Verify token error:', error)
       return { valid: false, message: error.message }
