@@ -24,7 +24,6 @@ Tài liệu này ghi lại tiến độ phát triển dự án Phong Thủy Số
 
 #### Kế hoạch tiếp theo:
 - Nhiệm vụ sắp tới 1
-- Nhiệm vụ sắp tới 2
 ```
 
 ## Nhật ký
