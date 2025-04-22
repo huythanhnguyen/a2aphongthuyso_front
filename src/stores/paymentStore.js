@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import { apiClient, API_CONFIG } from '@/services/api'
+import { apiClient, API_CONFIG, useMockMode } from '@/services/api'
 
 export const usePaymentStore = defineStore('payment', () => {
   // State
@@ -62,6 +62,32 @@ export const usePaymentStore = defineStore('payment', () => {
     try {
       isLoading.value = true
       currentPage.value = page
+      
+      if (useMockMode) {
+        console.log('Using mock payment history data');
+        // Mock payment history data
+        paymentHistory.value = [
+          {
+            id: 'MOCK-TX-001',
+            packageId: 2,
+            packageName: 'Gói Tiêu Chuẩn',
+            amount: 450000,
+            questions: 50,
+            status: 'completed',
+            paymentDate: new Date().toISOString(),
+            paymentMethod: 'Thẻ tín dụng',
+            previousTotal: 0,
+            newTotal: 50
+          }
+        ];
+        totalPages.value = 1;
+        isLoading.value = false;
+        return { 
+          success: true,
+          payments: paymentHistory.value,
+          pagination: { currentPage: 1, totalPages: 1, totalItems: 1 }
+        };
+      }
       
       // Gọi API để lấy dữ liệu
       const response = await apiClient.get(`${API_CONFIG.PAYMENT.HISTORY}?page=${page}`)

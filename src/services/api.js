@@ -3,6 +3,9 @@ import axios from 'axios'
 // Check if in development mode (using Vite's environment variables)
 const isDevelopment = import.meta.env.DEV;
 
+// Add mock mode toggle - set to true when backend is unavailable
+const useMockMode = true;
+
 // Cấu hình API
 const API_CONFIG = {
   // Sử dụng đường dẫn tương đối khi ở môi trường dev để proxy hoạt động
@@ -105,6 +108,52 @@ apiClient.interceptors.response.use(
       }
     }
     
+    // Nếu ở chế độ mock và có lỗi, trả về dữ liệu giả
+    if (useMockMode) {
+      console.warn(`Using mock data for ${error.config.url} due to: ${error.message}`);
+      
+      // Mock session ID for various requests
+      const mockSessionId = "mock-session-" + Math.random().toString(36).substring(2, 10);
+      
+      // Handle different API endpoints
+      if (error.config.url.includes('/api/v2/agent/chat')) {
+        return Promise.resolve({
+          success: true,
+          message: "Mock response",
+          sessionId: mockSessionId
+        });
+      }
+      
+      if (error.config.url.includes('/api/v2/agent/query')) {
+        return Promise.resolve({
+          success: true,
+          result: {
+            remainingQuestions: 10,
+            history: []
+          }
+        });
+      }
+
+      if (error.config.url.includes('/api/payments/payment/history')) {
+        return Promise.resolve({
+          success: true,
+          data: [],
+          pagination: {
+            total: 0,
+            page: 1,
+            limit: 10
+          }
+        });
+      }
+      
+      // Default mock response
+      return Promise.resolve({
+        success: true,
+        message: "Mock response",
+        data: []
+      });
+    }
+    
     // Tạo thông báo lỗi
     const errorMessage = 
       (error.response && error.response.data && error.response.data.message) ||
@@ -115,4 +164,4 @@ apiClient.interceptors.response.use(
   }
 )
 
-export { apiClient, API_CONFIG }
+export { apiClient, API_CONFIG, useMockMode }
