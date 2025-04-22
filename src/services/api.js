@@ -1,12 +1,9 @@
 import axios from 'axios'
 
-// Check if in development mode (using Vite's environment variables)
-const isDevelopment = import.meta.env.DEV;
-
 // Cấu hình API
 const API_CONFIG = {
-  // Sử dụng proxy trong môi trường development, đường dẫn chính xác cho production
-  API_BASE_URL: isDevelopment ? '/api' : 'https://phongthuybotbackend.onrender.com',
+  // Luôn sử dụng URL production, không dùng proxy
+  API_BASE_URL: 'https://phongthuybotbackend.onrender.com',
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',

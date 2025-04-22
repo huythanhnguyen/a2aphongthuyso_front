@@ -75,6 +75,7 @@ import analysisService from '@/services/analysisService';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { marked } from 'marked';
 import DOMPurify from 'dompurify';
+import { API_CONFIG } from '@/services/api';
 
 // Cấu hình tắt cảnh báo từ marked
 marked.setOptions({
@@ -101,16 +102,14 @@ onMounted(async () => {
     
     if (response.success && response.sessionId) {
       sessionId.value = response.sessionId;
-      
-      // Nếu đây là fallback session sau lỗi
-      if (response.isErrorFallback) {
-        console.log('Using fallback session due to API error');
-      }
     }
   } catch (error) {
     console.error('Error creating session:', error);
-    // Tạo ID phiên dự phòng
-    sessionId.value = "local-" + Math.random().toString(36).substring(2, 10);
+    messages.value.push({
+      role: 'system',
+      content: 'Không thể kết nối đến máy chủ. Vui lòng tải lại trang và thử lại.',
+      timestamp: new Date()
+    });
   }
   
   // Scroll to bottom on initial load
@@ -160,6 +159,10 @@ const sendMessage = async () => {
       baseUrl: API_CONFIG.API_BASE_URL
     });
     
+    if (!sessionId.value) {
+      throw new Error('Không có phiên chat. Vui lòng tải lại trang.');
+    }
+    
     // Handle streaming response
     streamController.value = await analysisService.streamChat(
       sentText,
@@ -176,15 +179,13 @@ const sendMessage = async () => {
       // onError callback
       (error) => {
         console.error('Stream error:', error);
-        // Thêm phản hồi lỗi thân thiện
-        streamingContent.value += `\n\nXin lỗi, tôi đang gặp khó khăn khi kết nối với dịch vụ. Vui lòng thử lại sau.`;
+        streamingContent.value = 'Lỗi kết nối đến máy chủ. Vui lòng thử lại sau.';
         finishStreaming();
       }
     );
   } catch (error) {
     console.error('Error in stream chat:', error);
-    // Sử dụng response thân thiện với người dùng
-    streamingContent.value = `Xin lỗi, tôi đang gặp khó khăn khi kết nối với dịch vụ. Vui lòng thử lại sau.`;
+    streamingContent.value = 'Lỗi kết nối đến máy chủ. Vui lòng thử lại sau.';
     finishStreaming();
   }
 };
