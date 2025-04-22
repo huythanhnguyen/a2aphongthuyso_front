@@ -9,8 +9,13 @@ const analysisService = {
   async analyzePhoneNumber(phoneNumber) {
     try {
       console.log('Sending phone analysis request with:', phoneNumber);
+      
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.PHONE.ANALYZE);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho phân tích số điện thoại
-      const response = await apiClient.post(API_CONFIG.PHONE.ANALYZE, { phoneNumber });
+      const response = await apiClient.post(endpoint, { phoneNumber });
       console.log('Phone analysis response:', response);
 
       if (!response.success) {
@@ -39,6 +44,15 @@ const analysisService = {
   },
   
   /**
+   * Xử lý endpoint để loại bỏ prefix /api không cần thiết
+   * @param {string} endpoint - endpoint gốc
+   * @returns {string} - endpoint đã xử lý
+   */
+  _cleanEndpoint(endpoint) {
+    return endpoint.replace('/api', '');
+  },
+  
+  /**
    * Phân tích CCCD/CMND
    * @param {string} cccdNumber - Số CCCD/CMND cần phân tích
    * @returns {Promise} - Kết quả phân tích
@@ -46,8 +60,13 @@ const analysisService = {
   async analyzeCCCD(cccdNumber) {
     try {
       console.log('Sending CCCD analysis request with:', cccdNumber);
+      
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.CCCD.ANALYZE);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho phân tích CCCD
-      const response = await apiClient.post(API_CONFIG.CCCD.ANALYZE, { cccdNumber });
+      const response = await apiClient.post(endpoint, { cccdNumber });
       console.log('CCCD analysis response:', response);
 
       if (!response.success) {
@@ -82,8 +101,12 @@ const analysisService = {
    */
   async analyzePassword(password) {
     try {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.PASSWORD.ANALYZE);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho phân tích mật khẩu
-      const response = await apiClient.post(API_CONFIG.PASSWORD.ANALYZE, { password });
+      const response = await apiClient.post(endpoint, { password });
 
       if (!response.success) {
         throw new Error(response.message || 'Không thể phân tích mật khẩu');
@@ -117,8 +140,12 @@ const analysisService = {
    */
   async analyzeBankAccount(accountNumber) {
     try {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.BANK_ACCOUNT.ANALYZE);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho phân tích số tài khoản
-      const response = await apiClient.post(API_CONFIG.BANK_ACCOUNT.ANALYZE, { accountNumber });
+      const response = await apiClient.post(endpoint, { accountNumber });
 
       if (!response.success) {
         throw new Error(response.message || 'Không thể phân tích số tài khoản');
@@ -153,8 +180,12 @@ const analysisService = {
    */
   async suggestBankAccount(purpose, preferredDigits = []) {
     try {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.BANK_ACCOUNT.SUGGEST);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho gợi ý số tài khoản
-      const response = await apiClient.post(API_CONFIG.BANK_ACCOUNT.SUGGEST, { 
+      const response = await apiClient.post(endpoint, { 
         purpose, 
         preferredDigits 
       });
@@ -182,8 +213,12 @@ const analysisService = {
    */
   async getAnalysisHistory(limit = 20, page = 1) {
     try {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.ANALYSIS.HISTORY);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho lấy lịch sử qua agent API
-      const response = await apiClient.post(API_CONFIG.ANALYSIS.HISTORY, {
+      const response = await apiClient.post(endpoint, {
         agentType: "batcuclinh_so",
         query: `Lấy lịch sử phân tích, giới hạn ${limit} kết quả, trang ${page}`
       });
@@ -212,8 +247,12 @@ const analysisService = {
    */
   async deleteAnalysisHistory() {
     try {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.ANALYSIS.DELETE_HISTORY);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho xóa lịch sử qua agent API
-      const response = await apiClient.post(API_CONFIG.ANALYSIS.DELETE_HISTORY, {
+      const response = await apiClient.post(endpoint, {
         agentType: "batcuclinh_so",
         query: "Xóa toàn bộ lịch sử phân tích của tôi"
       });
@@ -231,7 +270,11 @@ const analysisService = {
    */
   async askQuestion(payload) {
     try {
-      const response = await apiClient.post(API_CONFIG.AGENT.CHAT, {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.CHAT);
+      console.log('Using cleaned endpoint:', endpoint);
+      
+      const response = await apiClient.post(endpoint, {
         message: payload.question,
         sessionId: payload.sessionId || undefined,
         userId: payload.userId || undefined,
@@ -253,8 +296,12 @@ const analysisService = {
    */
   async sendFeedback(analysisId, feedbackType, comment = '') {
     try {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.ANALYSIS.FEEDBACK);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho gửi phản hồi qua agent API
-      const response = await apiClient.post(API_CONFIG.ANALYSIS.FEEDBACK, {
+      const response = await apiClient.post(endpoint, {
         agentType: "batcuclinh_so",
         query: `Gửi phản hồi cho phân tích ${analysisId}: ${feedbackType}, comment: ${comment}`
       });
@@ -272,8 +319,12 @@ const analysisService = {
    */
   async getRecentAnalyses(limit = 5) {
     try {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.ANALYSIS.RECENT);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint mới cho lấy phân tích gần đây qua agent API
-      const response = await apiClient.post(API_CONFIG.ANALYSIS.RECENT, {
+      const response = await apiClient.post(endpoint, {
         agentType: "batcuclinh_so",
         query: `Lấy ${limit} phân tích gần đây nhất`
       });
@@ -302,10 +353,15 @@ const analysisService = {
    */
   async createNewSession() {
     try {
-      console.log('Creating new session with URL:', `${API_CONFIG.API_BASE_URL}${API_CONFIG.AGENT.CHAT}`);
+      // Không ghép API_BASE_URL + API_CONFIG.AGENT.CHAT vì apiClient đã có baseURL
+      console.log('Creating new session with URL:', API_CONFIG.AGENT.CHAT);
       
-      // Sử dụng endpoint chat với URL đầy đủ
-      const response = await apiClient.post(API_CONFIG.AGENT.CHAT, {
+      // Trích xuất endpoint không có prefix /api
+      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.CHAT);
+      console.log('Using cleaned endpoint:', endpoint);
+      
+      // Sử dụng endpoint đã loại bỏ phần /api
+      const response = await apiClient.post(endpoint, {
         message: "Bắt đầu phiên phân tích mới",
       });
       
@@ -364,16 +420,21 @@ const analysisService = {
       const controller = new AbortController();
       const signal = controller.signal;
       
+      // Trích xuất endpoint không có prefix /api
+      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.STREAM);
+      
       // Log để debug
       console.log('Stream chat request:', {
         message,
         sessionId,
         metadata,
-        apiUrl: `${API_CONFIG.API_BASE_URL}${API_CONFIG.AGENT.STREAM}`
+        originalEndpoint: API_CONFIG.AGENT.STREAM,
+        cleanedEndpoint: endpoint,
+        fullUrl: `${API_CONFIG.API_BASE_URL}${endpoint}`
       });
       
-      // Sử dụng URL đầy đủ để gọi API
-      const apiUrl = `${API_CONFIG.API_BASE_URL}${API_CONFIG.AGENT.STREAM}`;
+      // Sử dụng URL đầy đủ để gọi API - trực tiếp không qua axios
+      const apiUrl = `${API_CONFIG.API_BASE_URL}${endpoint}`;
 
       fetch(apiUrl, {
         method: 'POST',
@@ -468,7 +529,11 @@ const analysisService = {
   // Phương thức mới: kiểm tra sức khỏe API
   async checkHealth() {
     try {
-      const response = await apiClient.get(API_CONFIG.HEALTH.CHECK);
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.HEALTH.CHECK);
+      console.log('Using cleaned endpoint:', endpoint);
+      
+      const response = await apiClient.get(endpoint);
       return {
         success: true,
         status: response.status,
@@ -506,7 +571,11 @@ const analysisService = {
   // Phương thức mới: lấy thông tin về Root Agent API
   async getRootAgentInfo() {
     try {
-      const response = await apiClient.get(API_CONFIG.AGENT.ROOT);
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.ROOT);
+      console.log('Using cleaned endpoint:', endpoint);
+      
+      const response = await apiClient.get(endpoint);
       return response;
     } catch (error) {
       console.error('Error getting Root Agent info:', error);
@@ -520,7 +589,11 @@ const analysisService = {
   // Phương thức mới: lấy thông tin về Bát Cục Linh Số API
   async getBatCucLinhSoInfo() {
     try {
-      const response = await apiClient.get(API_CONFIG.BAT_CUC_LINH_SO.ROOT);
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.BAT_CUC_LINH_SO.ROOT);
+      console.log('Using cleaned endpoint:', endpoint);
+      
+      const response = await apiClient.get(endpoint);
       return response;
     } catch (error) {
       console.error('Error getting Bát Cục Linh Số info:', error);
@@ -537,8 +610,12 @@ const analysisService = {
    */
   async getRemainingQuestions() {
     try {
+      // Loại bỏ prefix /api từ endpoint
+      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.QUERY);
+      console.log('Using cleaned endpoint:', endpoint);
+      
       // Sử dụng endpoint query mới
-      const response = await apiClient.post(API_CONFIG.AGENT.QUERY, {
+      const response = await apiClient.post(endpoint, {
         agentType: "batcuclinh_so",
         query: "Lấy số câu hỏi còn lại của tôi"
       });
