@@ -364,17 +364,17 @@ const analysisService = {
       const controller = new AbortController();
       const signal = controller.signal;
       
-      // Determine the correct URL based on environment
-      const apiUrl = import.meta.env.DEV 
-        ? `/api${API_CONFIG.AGENT.STREAM}` 
-        : `${API_CONFIG.API_BASE_URL}${API_CONFIG.AGENT.STREAM}`;
+      // Sử dụng URL tương đối để proxy xử lý
+      const apiUrl = `${API_CONFIG.AGENT.STREAM}`;
 
       fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('phone_analysis_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('phone_analysis_token')}`,
+          'X-Requested-With': 'XMLHttpRequest'
         },
+        credentials: 'include',
         body: JSON.stringify({
           message,
           sessionId,

@@ -91,10 +91,15 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '/api': {
+      '^/api/.*': {
         target: 'https://phongthuybotbackend.onrender.com',
         changeOrigin: true,
         secure: false,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+        headers: {
+          'Origin': 'https://phongthuybotbackend.onrender.com',
+          'Referer': 'https://phongthuybotbackend.onrender.com/'
+        },
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
             console.log('proxy error', err);
@@ -108,6 +113,11 @@ export default defineConfig({
         }
       }
     },
-    cors: true
+    cors: true,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, PATCH, OPTIONS',
+      'Access-Control-Allow-Headers': 'X-Requested-With, Content-Type, Authorization'
+    }
   }
 })

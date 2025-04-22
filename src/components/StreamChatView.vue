@@ -73,8 +73,14 @@
 import { ref, reactive, onMounted, nextTick, watch } from 'vue';
 import analysisService from '@/services/analysisService';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { useMockMode } from '@/services/api';
-import { renderMarkdown } from '@/utils/markdownUtils';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+
+// Cấu hình tắt cảnh báo từ marked
+marked.setOptions({
+  mangle: false,
+  headerIds: false
+});
 
 // State
 const messages = ref([]);
@@ -89,15 +95,9 @@ const streamController = ref(null);
 onMounted(async () => {
   // Tạo phiên chat mới
   try {
-    if (useMockMode) {
-      // Set mock session ID
-      sessionId.value = "mock-session-" + Math.random().toString(36).substring(2, 10);
-      console.log('Using mock session:', sessionId.value);
-    } else {
-      const response = await analysisService.createNewSession();
-      if (response.success && response.sessionId) {
-        sessionId.value = response.sessionId;
-      }
+    const response = await analysisService.createNewSession();
+    if (response.success && response.sessionId) {
+      sessionId.value = response.sessionId;
     }
   } catch (error) {
     console.error('Error creating session:', error);
@@ -142,59 +142,25 @@ const sendMessage = async () => {
   streamingContent.value = '';
   
   try {
-    if (useMockMode) {
-      // Mock streaming experience with a timer
-      const mockResponses = [
-        "Đang xử lý câu hỏi của bạn...",
-        "Phân tích dữ liệu...",
-        "Dựa trên câu hỏi của bạn, tôi có thể cung cấp một số thông tin sau:\n\n",
-        "Theo phong thủy số học, " + sentText + " có thể được phân tích như sau:\n\n",
-        "1. Các con số trong " + sentText + " mang những năng lượng khác nhau.\n",
-        "2. Mỗi con số có ý nghĩa riêng trong phong thủy.\n",
-        "3. Sự kết hợp giữa các con số tạo nên những tác động đặc biệt.\n\n",
-        "Hy vọng thông tin này hữu ích cho bạn!"
-      ];
-      
-      let index = 0;
-      const interval = setInterval(() => {
-        if (index < mockResponses.length) {
-          streamingContent.value += mockResponses[index];
-          index++;
-        } else {
-          clearInterval(interval);
-          finishStreaming();
-        }
-      }, 500);
-      
-      // Allow for cancellation
-      const mockController = {
-        abort: () => {
-          clearInterval(interval);
-          console.log('Mock stream aborted');
-        }
-      };
-      streamController.value = mockController;
-    } else {
-      // Original streaming code
-      streamController.value = await analysisService.streamChat(
-        sentText,
-        sessionId.value,
-        null,
-        // onChunk callback
-        (chunk) => {
-          streamingContent.value += chunk;
-        },
-        // onComplete callback
-        () => {
-          finishStreaming();
-        },
-        // onError callback
-        (error) => {
-          streamingContent.value += `\n\n*Error: ${error.message}*`;
-          finishStreaming();
-        }
-      );
-    }
+    // Handle streaming response
+    streamController.value = await analysisService.streamChat(
+      sentText,
+      sessionId.value,
+      null,
+      // onChunk callback
+      (chunk) => {
+        streamingContent.value += chunk;
+      },
+      // onComplete callback
+      () => {
+        finishStreaming();
+      },
+      // onError callback
+      (error) => {
+        streamingContent.value += `\n\n*Error: ${error.message}*`;
+        finishStreaming();
+      }
+    );
   } catch (error) {
     console.error('Error in stream chat:', error);
     streamingContent.value = `Error: ${error.message}`;
@@ -231,7 +197,8 @@ const scrollToBottom = () => {
 // Format message with markdown
 const formatMessage = (text) => {
   if (!text) return '';
-  return renderMarkdown(text);
+  // Convert markdown to HTML and sanitize
+  return DOMPurify.sanitize(marked.parse(text));
 };
 
 // Format timestamp
