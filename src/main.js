@@ -15,17 +15,13 @@ import {
   faExclamationCircle, faQuestionCircle, faSun, faCloud, 
   faBalanceScale, faPlusCircle, faMinusCircle, faTrashAlt,
   faIdCard, faCreditCard, faChevronDown, faUserCircle, faPlus,
-  // Icons mới
   faMobileAlt, faArrowRight, faChevronUp, faMobile, faMoneyBill, 
   faUniversity, faExclamationTriangle, faCalendarAlt, faChevronLeft, faChevronRight,
-  // Icons bị thiếu
   faCompass, faTools, faTags,
-  faCheckCircle, faTimesCircle, faInfoCircle, faExclamationTriangle,
-  faChevronDown, faChevronRight, faChevronLeft, faChevronUp,
-  faHome, faHistory, faPlus, faPaperPlane, faTimes, faPlusCircle,
-  faSpinner, faSearch, faFilter, faSort, faIdCard, faKey,
-  faCreditCard, faWallet, faMoneyBillWave, faQuestion, faQuestionCircle,
-  faMinusCircle, faCog, faSignOutAlt, faTrash, faEdit, faCommentDots,
+  faCheckCircle, faTimesCircle, faInfoCircle,
+  faSpinner, faSearch, faFilter, faSort,
+  faWallet, faMoneyBillWave, faQuestion,
+  faCog, faTrash, faEdit, faCommentDots,
   faStop, faPlayCircle, faPauseCircle, faEllipsisV, faComment
 } from '@fortawesome/free-solid-svg-icons'
 
@@ -37,17 +33,13 @@ library.add(
   faExclamationCircle, faQuestionCircle, faSun, faCloud, 
   faBalanceScale, faPlusCircle, faMinusCircle, faTrashAlt,
   faIdCard, faCreditCard, faChevronDown, faUserCircle, faPlus,
-  // Icons mới
   faMobileAlt, faArrowRight, faChevronUp, faMobile, faMoneyBill,
   faUniversity, faExclamationTriangle, faCalendarAlt, faChevronLeft, faChevronRight,
-  // Icons bị thiếu
   faCompass, faTools, faTags,
-  faCheckCircle, faTimesCircle, faInfoCircle, faExclamationTriangle,
-  faChevronDown, faChevronRight, faChevronLeft, faChevronUp,
-  faHome, faHistory, faPlus, faPaperPlane, faTimes, faPlusCircle,
-  faSpinner, faSearch, faFilter, faSort, faIdCard, faKey,
-  faCreditCard, faWallet, faMoneyBillWave, faQuestion, faQuestionCircle,
-  faMinusCircle, faCog, faSignOutAlt, faTrash, faEdit, faCommentDots,
+  faCheckCircle, faTimesCircle, faInfoCircle,
+  faSpinner, faSearch, faFilter, faSort,
+  faWallet, faMoneyBillWave, faQuestion,
+  faCog, faTrash, faEdit, faCommentDots,
   faStop, faPlayCircle, faPauseCircle, faEllipsisV, faComment
 )
 
