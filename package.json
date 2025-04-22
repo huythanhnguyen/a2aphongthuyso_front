@@ -14,9 +14,10 @@
     "@fortawesome/free-solid-svg-icons": "^6.4.0",
     "@fortawesome/vue-fontawesome": "^3.0.3",
     "axios": "^1.4.0",
-    "dompurify": "^3.0.5",
+    "dompurify": "^3.2.5",
     "marked": "^6.0.0",
     "pinia": "^2.1.7",
+    "vite-plugin-pwa": "^1.0.0",
     "vue": "^3.3.2",
     "vue-router": "^4.2.0"
   },
