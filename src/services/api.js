@@ -5,8 +5,8 @@ const isDevelopment = import.meta.env.DEV;
 
 // Cấu hình API
 const API_CONFIG = {
-  // Sử dụng proxy trong môi trường development
-  API_BASE_URL: isDevelopment ? '/api' : 'https://phongthuybotbackend.onrender.com/api',
+  // Sử dụng proxy trong môi trường development, đường dẫn chính xác cho production
+  API_BASE_URL: isDevelopment ? '/api' : 'https://phongthuybotbackend.onrender.com',
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
@@ -17,42 +17,42 @@ const API_CONFIG = {
   USER: {
     PROFILE: '/users/profile',
     UPDATE_PROFILE: '/users/profile',
-    REMAINING_QUESTIONS: '/v2/agent/query',
+    REMAINING_QUESTIONS: '/api/v2/agent/query',
     GET_INFO_BY_PHONE: '/users/by-phone'
   },
   ANALYSIS: {
-    ANALYZE: '/v2/bat-cuc-linh-so/analyze',
-    HISTORY: '/v2/agent/query',
-    FEEDBACK: '/v2/agent/query',
-    RECENT: '/v2/agent/query',
-    QUESTION: '/v2/agent/chat',
-    STREAM: '/v2/agent/stream',
-    DELETE_HISTORY: '/v2/agent/query'
+    ANALYZE: '/api/v2/bat-cuc-linh-so/analyze',
+    HISTORY: '/api/v2/agent/query',
+    FEEDBACK: '/api/v2/agent/query',
+    RECENT: '/api/v2/agent/query',
+    QUESTION: '/api/v2/agent/chat',
+    STREAM: '/api/v2/agent/stream',
+    DELETE_HISTORY: '/api/v2/agent/query'
   },
   PHONE: {
-    ANALYZE: '/v2/bat-cuc-linh-so/phone'
+    ANALYZE: '/api/v2/bat-cuc-linh-so/phone'
   },
   CCCD: {
-    ANALYZE: '/v2/bat-cuc-linh-so/cccd'
+    ANALYZE: '/api/v2/bat-cuc-linh-so/cccd'
   },
   PASSWORD: {
-    ANALYZE: '/v2/bat-cuc-linh-so/password'
+    ANALYZE: '/api/v2/bat-cuc-linh-so/password'
   },
   BANK_ACCOUNT: {
-    ANALYZE: '/v2/bat-cuc-linh-so/bank-account',
-    SUGGEST: '/v2/bat-cuc-linh-so/suggest-bank-account'
+    ANALYZE: '/api/v2/bat-cuc-linh-so/bank-account',
+    SUGGEST: '/api/v2/bat-cuc-linh-so/suggest-bank-account'
   },
   HEALTH: {
-    CHECK: '/health'
+    CHECK: '/api/health'
   },
   AGENT: {
-    ROOT: '/v2/agent',
-    CHAT: '/v2/agent/chat',
-    STREAM: '/v2/agent/stream',
-    QUERY: '/v2/agent/query'
+    ROOT: '/api/v2/agent',
+    CHAT: '/api/v2/agent/chat',
+    STREAM: '/api/v2/agent/stream',
+    QUERY: '/api/v2/agent/query'
   },
   BAT_CUC_LINH_SO: {
-    ROOT: '/v2/bat-cuc-linh-so'
+    ROOT: '/api/v2/bat-cuc-linh-so'
   },
   PAYMENT: {
     CREATE: '/payments/create',
@@ -105,11 +105,14 @@ apiClient.interceptors.response.use(
       }
     }
     
-    // Tạo thông báo lỗi
+    // Tạo thông báo lỗi chi tiết hơn
     const errorMessage = 
       (error.response && error.response.data && error.response.data.message) ||
       error.message ||
-      'Đã xảy ra lỗi khi kết nối đến máy chủ'
+      'Đã xảy ra lỗi khi kết nối đến máy chủ';
+    
+    // Thông tin bổ sung cho debug
+    console.error(`API Error [${error.config?.method}] ${error.config?.url}:`, error.response || error.message);
     
     return Promise.reject(new Error(errorMessage))
   }

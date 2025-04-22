@@ -95,12 +95,22 @@ const streamController = ref(null);
 onMounted(async () => {
   // Tạo phiên chat mới
   try {
+    console.log('Initializing chat session');
     const response = await analysisService.createNewSession();
+    console.log('Session creation response:', response);
+    
     if (response.success && response.sessionId) {
       sessionId.value = response.sessionId;
+      
+      // Nếu đây là fallback session sau lỗi
+      if (response.isErrorFallback) {
+        console.log('Using fallback session due to API error');
+      }
     }
   } catch (error) {
     console.error('Error creating session:', error);
+    // Tạo ID phiên dự phòng
+    sessionId.value = "local-" + Math.random().toString(36).substring(2, 10);
   }
   
   // Scroll to bottom on initial load
@@ -142,6 +152,14 @@ const sendMessage = async () => {
   streamingContent.value = '';
   
   try {
+    // Log request details for debugging
+    console.log('Send message request:', {
+      text: sentText,
+      sessionId: sessionId.value,
+      url: API_CONFIG.AGENT.STREAM,
+      baseUrl: API_CONFIG.API_BASE_URL
+    });
+    
     // Handle streaming response
     streamController.value = await analysisService.streamChat(
       sentText,
@@ -157,13 +175,16 @@ const sendMessage = async () => {
       },
       // onError callback
       (error) => {
-        streamingContent.value += `\n\n*Error: ${error.message}*`;
+        console.error('Stream error:', error);
+        // Thêm phản hồi lỗi thân thiện
+        streamingContent.value += `\n\nXin lỗi, tôi đang gặp khó khăn khi kết nối với dịch vụ. Vui lòng thử lại sau.`;
         finishStreaming();
       }
     );
   } catch (error) {
     console.error('Error in stream chat:', error);
-    streamingContent.value = `Error: ${error.message}`;
+    // Sử dụng response thân thiện với người dùng
+    streamingContent.value = `Xin lỗi, tôi đang gặp khó khăn khi kết nối với dịch vụ. Vui lòng thử lại sau.`;
     finishStreaming();
   }
 };

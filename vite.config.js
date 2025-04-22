@@ -91,14 +91,15 @@ export default defineConfig({
   },
   server: {
     proxy: {
-      '^/api/.*': {
+      '/api': {
         target: 'https://phongthuybotbackend.onrender.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/api/, ''),
+        ws: true,
         headers: {
           'Origin': 'https://phongthuybotbackend.onrender.com',
-          'Referer': 'https://phongthuybotbackend.onrender.com/'
+          'Referer': 'https://phongthuybotbackend.onrender.com/',
+          'Host': 'phongthuybotbackend.onrender.com'
         },
         configure: (proxy, _options) => {
           proxy.on('error', (err, _req, _res) => {
