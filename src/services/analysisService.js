@@ -363,8 +363,13 @@ const analysisService = {
     try {
       const controller = new AbortController();
       const signal = controller.signal;
+      
+      // Determine the correct URL based on environment
+      const apiUrl = import.meta.env.DEV 
+        ? `/api${API_CONFIG.AGENT.STREAM}` 
+        : `${API_CONFIG.API_BASE_URL}${API_CONFIG.AGENT.STREAM}`;
 
-      fetch(`${API_CONFIG.API_BASE_URL}${API_CONFIG.AGENT.STREAM}`, {
+      fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
