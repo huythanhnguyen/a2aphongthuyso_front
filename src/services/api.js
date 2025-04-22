@@ -4,15 +4,15 @@ import axios from 'axios'
 const API_CONFIG = {
   API_BASE_URL: 'https://phongthuybotbackend.onrender.com/api',
   AUTH: {
-    LOGIN: '/v2/auth/login',
-    REGISTER: '/v2/auth/register',
-    LOGOUT: '/v2/auth/logout',
-    VERIFY_TOKEN: '/v2/auth/me',
-    CHANGE_PASSWORD: '/v2/auth/change-password'
+    LOGIN: '/auth/login',
+    REGISTER: '/auth/register',
+    LOGOUT: '/auth/logout',
+    VERIFY_TOKEN: '/auth/me',
+    CHANGE_PASSWORD: '/auth/change-password'
   },
   USER: {
-    PROFILE: '/v2/auth/me',
-    UPDATE_PROFILE: '/v2/auth/update-profile',
+    PROFILE: '/users/profile',
+    UPDATE_PROFILE: '/users/profile',
     REMAINING_QUESTIONS: '/v2/agent/query'
   },
   ANALYSIS: {
@@ -21,7 +21,6 @@ const API_CONFIG = {
     FEEDBACK: '/v2/agent/query',
     RECENT: '/v2/agent/query',
     QUESTION: '/v2/agent/chat',
-    STREAM: '/v2/agent/stream',
     DELETE_HISTORY: '/v2/agent/query'
   },
   PHONE: {
@@ -38,10 +37,10 @@ const API_CONFIG = {
     SUGGEST: '/v2/bat-cuc-linh-so/suggest-bank-account'
   },
   PAYMENT: {
-    CREATE: '/v2/payments/create',
-    HISTORY: '/v2/payments/history',
-    CALLBACK: '/v2/payments/callback',
-    STATUS: '/v2/payments/status'
+    CREATE: '/payments/create',
+    HISTORY: '/payments/payment/history',
+    CALLBACK: '/payments/callback',
+    STATUS: '/payments/status'
   },
   REQUEST_TIMEOUT: 15000,
 }

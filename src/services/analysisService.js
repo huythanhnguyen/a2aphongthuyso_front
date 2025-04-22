@@ -183,10 +183,14 @@ const analysisService = {
   async getAnalysisHistory(limit = 20, page = 1) {
     try {
       // Sử dụng endpoint mới cho lấy lịch sử qua agent API
-      const response = await this.queryAgent("batcuclinh_so", 
-        `Lấy lịch sử phân tích, giới hạn ${limit} kết quả, trang ${page}`, 
-        { limit, page }
-      );
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.HISTORY, {
+        agentType: "batcuclinh_so",
+        query: `Lấy lịch sử phân tích, giới hạn ${limit} kết quả, trang ${page}`
+      });
+      
+      if (!response.success) {
+        throw new Error(response.message || 'Không thể lấy lịch sử phân tích');
+      }
       
       // Chuẩn hóa dữ liệu phản hồi
       if (response.result && response.result.history) {
@@ -209,9 +213,10 @@ const analysisService = {
   async deleteAnalysisHistory() {
     try {
       // Sử dụng endpoint mới cho xóa lịch sử qua agent API
-      const response = await this.queryAgent("batcuclinh_so", 
-        "Xóa toàn bộ lịch sử phân tích của tôi"
-      );
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.DELETE_HISTORY, {
+        agentType: "batcuclinh_so",
+        query: "Xóa toàn bộ lịch sử phân tích của tôi"
+      });
       return response;
     } catch (error) {
       console.error('Error deleting analysis history:', error)
@@ -375,150 +380,6 @@ const analysisService = {
         message: 'Không thể lấy thông tin người dùng từ số điện thoại',
         error: error.message
       }
-    }
-  },
-
-  /**
-   * Gửi câu hỏi và nhận phản hồi dạng stream
-   * @param {Object} payload - Dữ liệu câu hỏi
-   * @param {Function} onChunk - Callback khi nhận được chunk dữ liệu
-   * @param {Function} onComplete - Callback khi stream hoàn tất
-   * @param {Function} onError - Callback khi có lỗi
-   * @returns {Object} - Đối tượng điều khiển stream
-   */
-  streamQuestion(payload, onChunk, onComplete, onError) {
-    try {
-      const controller = new AbortController();
-      const { signal } = controller;
-      
-      // Xây dựng URL với query parameters
-      const url = new URL(`${API_CONFIG.API_BASE_URL}${API_CONFIG.ANALYSIS.STREAM}`);
-      
-      const headers = {
-        'Content-Type': 'application/json'
-      };
-      
-      // Thêm token nếu có
-      const token = localStorage.getItem('phone_analysis_token');
-      if (token) {
-        headers.Authorization = `Bearer ${token}`;
-      }
-      
-      // Gửi request
-      fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          message: payload.question,
-          sessionId: payload.sessionId || undefined,
-          metadata: payload.metadata || undefined
-        }),
-        signal
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        // Xử lý stream với EventSource
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let fullText = '';
-        
-        function readStream() {
-          reader.read().then(({ done, value }) => {
-            if (done) {
-              onComplete && onComplete(fullText);
-              return;
-            }
-            
-            // Decode và xử lý từng chunk
-            const chunk = decoder.decode(value, { stream: true });
-            const lines = chunk.split('\n\n');
-            
-            for (const line of lines) {
-              if (line.startsWith('data: ')) {
-                try {
-                  const data = JSON.parse(line.substring(6));
-                  
-                  if (data.type === 'chunk') {
-                    fullText += data.content;
-                    onChunk && onChunk(data.content, fullText);
-                  } else if (data.type === 'complete') {
-                    onComplete && onComplete(fullText);
-                  } else if (data.type === 'error') {
-                    onError && onError(data.error);
-                  }
-                } catch (e) {
-                  console.error('Error parsing SSE data:', e);
-                  onError && onError(e.message);
-                }
-              }
-            }
-            
-            // Tiếp tục đọc stream
-            readStream();
-          }).catch(error => {
-            console.error('Error reading stream:', error);
-            onError && onError(error.message);
-          });
-        }
-        
-        // Bắt đầu đọc stream
-        readStream();
-      })
-      .catch(error => {
-        console.error('Stream request error:', error);
-        onError && onError(error.message);
-      });
-      
-      // Trả về controller để có thể hủy stream khi cần
-      return {
-        abort: () => controller.abort()
-      };
-    } catch (error) {
-      console.error('Stream setup error:', error);
-      onError && onError(error.message);
-      return {
-        abort: () => {}
-      };
-    }
-  },
-
-  /**
-   * Truy vấn trực tiếp một agent cụ thể
-   * @param {string} agentType - Loại agent cần truy vấn
-   * @param {string} query - Nội dung truy vấn
-   * @param {Object} metadata - Metadata bổ sung (tùy chọn)
-   * @returns {Promise} - Kết quả truy vấn
-   */
-  async queryAgent(agentType, query, metadata = {}) {
-    try {
-      const sessionId = localStorage.getItem('phone_analysis_session_id');
-      
-      const payload = {
-        agentType,
-        query,
-        sessionId: sessionId || undefined,
-        metadata
-      };
-      
-      console.log('Sending agent query with payload:', payload);
-      const response = await apiClient.post('/v2/agent/query', payload);
-      console.log('Agent query response:', response);
-      
-      if (!response.success) {
-        throw new Error(response.message || `Không thể truy vấn agent ${agentType}`);
-      }
-      
-      return response;
-    } catch (error) {
-      console.error(`Error querying agent ${agentType}:`, error);
-      return { 
-        success: false, 
-        message: error.message,
-        error: error.message
-      };
     }
   }
 }

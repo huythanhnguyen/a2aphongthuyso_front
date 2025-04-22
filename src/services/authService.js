@@ -12,18 +12,6 @@ const authService = {
       // Thử gọi API đăng nhập
       try {
         const response = await apiClient.post(API_CONFIG.AUTH.LOGIN, { email, password })
-        
-        // Lưu token và thông tin người dùng
-        if (response.success && response.token) {
-          localStorage.setItem('phone_analysis_token', response.token)
-          localStorage.setItem('phone_analysis_user', JSON.stringify(response.user))
-          
-          // Lưu sessionId nếu có
-          if (response.sessionId) {
-            localStorage.setItem('phone_analysis_session_id', response.sessionId)
-          }
-        }
-        
         return response
       } catch (apiError) {
         console.log('API login không khả dụng, sử dụng phiên ẩn danh:', apiError.message)
@@ -111,18 +99,6 @@ const authService = {
     try {
       try {
         const response = await apiClient.post(API_CONFIG.AUTH.REGISTER, { name, email, password })
-        
-        // Lưu token và thông tin người dùng
-        if (response.success && response.token) {
-          localStorage.setItem('phone_analysis_token', response.token)
-          localStorage.setItem('phone_analysis_user', JSON.stringify(response.user))
-          
-          // Lưu sessionId nếu có
-          if (response.sessionId) {
-            localStorage.setItem('phone_analysis_session_id', response.sessionId)
-          }
-        }
-        
         return response
       } catch (apiError) {
         console.log('API register không khả dụng, sử dụng phiên ẩn danh:', apiError.message)
