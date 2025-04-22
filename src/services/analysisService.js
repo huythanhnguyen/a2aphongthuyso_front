@@ -231,10 +231,10 @@ const analysisService = {
    */
   async askQuestion(payload) {
     try {
-      // Sử dụng endpoint chat mới
-      const response = await apiClient.post(API_CONFIG.ANALYSIS.QUESTION, {
+      const response = await apiClient.post(API_CONFIG.AGENT.CHAT, {
         message: payload.question,
         sessionId: payload.sessionId || undefined,
+        userId: payload.userId || undefined,
         metadata: payload.metadata || undefined
       });
       return response;
@@ -297,53 +297,19 @@ const analysisService = {
   },
 
   /**
-   * Lấy số câu hỏi còn lại của người dùng trong ngày
-   * @returns {Promise} - Số câu hỏi còn lại
-   */
-  async getRemainingQuestions() {
-    try {
-      // Sử dụng endpoint mới cho lấy số câu hỏi còn lại qua agent API
-      const response = await apiClient.post(API_CONFIG.USER.REMAINING_QUESTIONS, {
-        agentType: "batcuclinh_so",
-        query: "Lấy số câu hỏi còn lại của tôi"
-      });
-      
-      if (response.success && response.result) {
-        // Nếu có trường remainingQuestions trong kết quả, sử dụng nó
-        if (response.result.remainingQuestions !== undefined) {
-          response.remainingQuestions = response.result.remainingQuestions;
-        } else {
-          // Giá trị mặc định
-          response.remainingQuestions = 10;
-        }
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('Error getting remaining questions:', error)
-      return { 
-        success: false, 
-        message: 'Không thể lấy thông tin số câu hỏi còn lại',
-        error: error.message,
-        remainingQuestions: 10 // Giá trị mặc định
-      }
-    }
-  },
-
-  /**
    * Tạo phiên hội thoại mới
    * @returns {Promise} - Thông tin phiên mới
    */
   async createNewSession() {
     try {
-      // Sử dụng endpoint mới để tạo phiên mới qua agent API
-      const response = await apiClient.post(API_CONFIG.ANALYSIS.QUESTION, {
+      // Sử dụng endpoint chat mới
+      const response = await apiClient.post(API_CONFIG.AGENT.CHAT, {
         message: "Bắt đầu phiên phân tích mới",
       });
       
       return {
         success: true,
-        sessionId: response.result.sessionId
+        sessionId: response.result?.sessionId || response.sessionId || null
       };
     } catch (error) {
       console.error('Error creating new session:', error)
@@ -381,7 +347,209 @@ const analysisService = {
         error: error.message
       }
     }
-  }
+  },
+
+  /**
+   * Gửi tin nhắn đến Agent và nhận phản hồi dạng stream (Server-Sent Events)
+   * @param {string} message - Nội dung tin nhắn
+   * @param {string} sessionId - ID phiên (optional)
+   * @param {Object} metadata - Metadata (optional)
+   * @param {Function} onChunk - Callback xử lý mỗi chunk dữ liệu
+   * @param {Function} onComplete - Callback khi stream hoàn tất
+   * @param {Function} onError - Callback khi có lỗi
+   * @returns {Promise} - Đối tượng AbortController để hủy stream
+   */
+  async streamChat(message, sessionId, metadata, onChunk, onComplete, onError) {
+    try {
+      const controller = new AbortController();
+      const signal = controller.signal;
+
+      fetch(`${API_CONFIG.API_BASE_URL}${API_CONFIG.AGENT.STREAM}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('phone_analysis_token')}`
+        },
+        body: JSON.stringify({
+          message,
+          sessionId,
+          metadata
+        }),
+        signal
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        // Hàm đọc dữ liệu từ stream
+        function readStream() {
+          reader.read().then(({ done, value }) => {
+            if (done) {
+              // Xử lý bất kỳ dữ liệu còn lại trong buffer
+              if (buffer.trim()) {
+                processChunks(buffer);
+              }
+              if (onComplete) onComplete();
+              return;
+            }
+
+            // Decode và xử lý dữ liệu
+            const chunk = decoder.decode(value, { stream: true });
+            buffer += chunk;
+
+            // Xử lý từng dòng SSE "data: {...}"
+            let lines = buffer.split('\n\n');
+            buffer = lines.pop() || ''; // Giữ phần còn lại cho lần đọc tiếp theo
+
+            processChunks(lines.join('\n\n'));
+            readStream();
+          }).catch(err => {
+            if (err.name === 'AbortError') {
+              console.log('Stream was aborted');
+            } else if (onError) {
+              onError(err);
+            }
+          });
+        }
+
+        // Xử lý các chunks
+        function processChunks(text) {
+          const lines = text.split('\n\n');
+          for (let line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.substring(6));
+                if (data.type === 'chunk' && onChunk) {
+                  onChunk(data.content);
+                } else if (data.type === 'error' && onError) {
+                  onError(new Error(data.error || 'Unknown stream error'));
+                } else if (data.type === 'complete' && onComplete) {
+                  onComplete();
+                }
+              } catch (e) {
+                console.error('Error parsing SSE data:', e, line);
+              }
+            }
+          }
+        }
+
+        readStream();
+      })
+      .catch(err => {
+        if (onError) onError(err);
+      });
+
+      return controller; // Trả về controller để có thể hủy stream nếu cần
+    } catch (error) {
+      if (onError) onError(error);
+      return null;
+    }
+  },
+
+  // Phương thức mới: kiểm tra sức khỏe API
+  async checkHealth() {
+    try {
+      const response = await apiClient.get(API_CONFIG.HEALTH.CHECK);
+      return {
+        success: true,
+        status: response.status,
+        message: response.message,
+        version: response.version,
+        adkEnabled: response.adkEnabled
+      };
+    } catch (error) {
+      console.error('Error checking API health:', error);
+      return {
+        success: false,
+        status: 'error',
+        message: error.message
+      };
+    }
+  },
+
+  // Phương thức mới: lấy thông tin về API
+  async getAPIInfo() {
+    try {
+      const response = await apiClient.get('/');
+      return {
+        success: true,
+        ...response
+      };
+    } catch (error) {
+      console.error('Error getting API info:', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  },
+
+  // Phương thức mới: lấy thông tin về Root Agent API
+  async getRootAgentInfo() {
+    try {
+      const response = await apiClient.get(API_CONFIG.AGENT.ROOT);
+      return response;
+    } catch (error) {
+      console.error('Error getting Root Agent info:', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  },
+
+  // Phương thức mới: lấy thông tin về Bát Cục Linh Số API
+  async getBatCucLinhSoInfo() {
+    try {
+      const response = await apiClient.get(API_CONFIG.BAT_CUC_LINH_SO.ROOT);
+      return response;
+    } catch (error) {
+      console.error('Error getting Bát Cục Linh Số info:', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  },
+
+  /**
+   * Lấy số câu hỏi còn lại của người dùng trong ngày
+   * @returns {Promise} - Số câu hỏi còn lại
+   */
+  async getRemainingQuestions() {
+    try {
+      // Sử dụng endpoint query mới
+      const response = await apiClient.post(API_CONFIG.AGENT.QUERY, {
+        agentType: "batcuclinh_so",
+        query: "Lấy số câu hỏi còn lại của tôi"
+      });
+      
+      if (response.success && response.result) {
+        // Nếu có trường remainingQuestions trong kết quả, sử dụng nó
+        if (response.result.remainingQuestions !== undefined) {
+          response.remainingQuestions = response.result.remainingQuestions;
+        } else {
+          // Giá trị mặc định
+          response.remainingQuestions = 10;
+        }
+      }
+      
+      return response;
+    } catch (error) {
+      console.error('Error getting remaining questions:', error)
+      return { 
+        success: false, 
+        message: 'Không thể lấy thông tin số câu hỏi còn lại',
+        error: error.message,
+        remainingQuestions: 10 // Giá trị mặc định
+      }
+    }
+  },
 }
 
 export default analysisService

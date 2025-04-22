@@ -1,7 +1,7 @@
 <template>
   <div class="sidebar" :class="{ active: isActive }">
     <div class="sidebar-header">
-      <h2>Phân Tích Số Điện Thoại</h2>
+      <h2>Phong Thủy Số</h2>
       <button class="new-chat-btn" @click="onNewChat">
         <font-awesome-icon icon="plus" /> Cuộc hội thoại mới
       </button>
@@ -35,6 +35,18 @@
           Nạp thêm câu hỏi
         </router-link>
       </div>
+    </div>
+    
+    <!-- Navigation Links -->
+    <div class="sidebar-nav">
+      <router-link to="/app" class="nav-link" active-class="active">
+        <font-awesome-icon icon="home" />
+        <span>Trang chính</span>
+      </router-link>
+      <router-link to="/chat" class="nav-link" active-class="active">
+        <font-awesome-icon icon="comment-dots" />
+        <span>Chat trực tiếp</span>
+      </router-link>
     </div>
     
     <div class="sidebar-content">
@@ -339,7 +351,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .quota-label {
@@ -671,5 +683,38 @@ onMounted(async () => {
 .load-more-btn:disabled {
   opacity: 0.7;
   cursor: not-allowed;
+}
+
+.sidebar-nav {
+  padding: 0 16px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--text-primary, #334155);
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+  background-color: var(--hover-color, #f1f5f9);
+}
+
+.nav-link.active {
+  background-color: var(--primary-light, #eef2ff);
+  color: var(--primary-color, #4361ee);
+}
+
+.nav-link svg {
+  margin-right: 12px;
+  width: 18px;
 }
 </style>

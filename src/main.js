@@ -19,7 +19,14 @@ import {
   faMobileAlt, faArrowRight, faChevronUp, faMobile, faMoneyBill, 
   faUniversity, faExclamationTriangle, faCalendarAlt, faChevronLeft, faChevronRight,
   // Icons bị thiếu
-  faCompass, faTools, faTags
+  faCompass, faTools, faTags,
+  faCheckCircle, faTimesCircle, faInfoCircle, faExclamationTriangle,
+  faChevronDown, faChevronRight, faChevronLeft, faChevronUp,
+  faHome, faHistory, faPlus, faPaperPlane, faTimes, faPlusCircle,
+  faSpinner, faSearch, faFilter, faSort, faIdCard, faKey,
+  faCreditCard, faWallet, faMoneyBillWave, faQuestion, faQuestionCircle,
+  faMinusCircle, faCog, faSignOutAlt, faTrash, faEdit, faCommentDots,
+  faStop, faPlayCircle, faPauseCircle, faEllipsisV, faComment
 } from '@fortawesome/free-solid-svg-icons'
 
 // Add all the necessary icons
@@ -34,7 +41,14 @@ library.add(
   faMobileAlt, faArrowRight, faChevronUp, faMobile, faMoneyBill,
   faUniversity, faExclamationTriangle, faCalendarAlt, faChevronLeft, faChevronRight,
   // Icons bị thiếu
-  faCompass, faTools, faTags
+  faCompass, faTools, faTags,
+  faCheckCircle, faTimesCircle, faInfoCircle, faExclamationTriangle,
+  faChevronDown, faChevronRight, faChevronLeft, faChevronUp,
+  faHome, faHistory, faPlus, faPaperPlane, faTimes, faPlusCircle,
+  faSpinner, faSearch, faFilter, faSort, faIdCard, faKey,
+  faCreditCard, faWallet, faMoneyBillWave, faQuestion, faQuestionCircle,
+  faMinusCircle, faCog, faSignOutAlt, faTrash, faEdit, faCommentDots,
+  faStop, faPlayCircle, faPauseCircle, faEllipsisV, faComment
 )
 
 // Import global CSS

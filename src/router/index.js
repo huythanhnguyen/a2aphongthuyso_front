@@ -6,6 +6,7 @@ import OurService from '../views/OurService.vue'
 import Pricing from '../views/Pricing.vue'
 import PaymentView from '../views/PaymentView.vue'
 import TC from '../views/TC.vue'
+import StreamChatView from '../components/StreamChatView.vue'
 
 // Thêm import cho các trang con
 import BatCucLinhSo from '../views/guides/BatCucLinhSo.vue'
@@ -31,6 +32,12 @@ const router = createRouter({
       path: '/app',
       name: 'app',
       component: AppView,
+      meta: { requiresAuth: true }
+    },
+    {
+      path: '/chat',
+      name: 'streamChat',
+      component: StreamChatView,
       meta: { requiresAuth: true }
     },
     // Thêm các route mới

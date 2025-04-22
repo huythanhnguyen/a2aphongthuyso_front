@@ -13,7 +13,8 @@ const API_CONFIG = {
   USER: {
     PROFILE: '/users/profile',
     UPDATE_PROFILE: '/users/profile',
-    REMAINING_QUESTIONS: '/v2/agent/query'
+    REMAINING_QUESTIONS: '/v2/agent/query',
+    GET_INFO_BY_PHONE: '/users/by-phone'
   },
   ANALYSIS: {
     ANALYZE: '/v2/bat-cuc-linh-so/analyze',
@@ -21,6 +22,7 @@ const API_CONFIG = {
     FEEDBACK: '/v2/agent/query',
     RECENT: '/v2/agent/query',
     QUESTION: '/v2/agent/chat',
+    STREAM: '/v2/agent/stream',
     DELETE_HISTORY: '/v2/agent/query'
   },
   PHONE: {
@@ -36,6 +38,18 @@ const API_CONFIG = {
     ANALYZE: '/v2/bat-cuc-linh-so/bank-account',
     SUGGEST: '/v2/bat-cuc-linh-so/suggest-bank-account'
   },
+  HEALTH: {
+    CHECK: '/health'
+  },
+  AGENT: {
+    ROOT: '/v2/agent',
+    CHAT: '/v2/agent/chat',
+    STREAM: '/v2/agent/stream',
+    QUERY: '/v2/agent/query'
+  },
+  BAT_CUC_LINH_SO: {
+    ROOT: '/v2/bat-cuc-linh-so'
+  },
   PAYMENT: {
     CREATE: '/payments/create',
     HISTORY: '/payments/payment/history',
@@ -43,6 +57,7 @@ const API_CONFIG = {
     STATUS: '/payments/status'
   },
   REQUEST_TIMEOUT: 15000,
+  ADK_SERVICE_URL: 'http://localhost:10000'
 }
 
 // Tạo instance axios
