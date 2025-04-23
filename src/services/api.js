@@ -99,6 +99,10 @@ adkClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // Điều chỉnh URL để sử dụng endpoint đúng cho chat
+    if (config.url.includes('/chat')) {
+      config.baseURL = API_CONFIG.ADK_SERVICE_URL;
+    }
     return config
   },
   error => {
