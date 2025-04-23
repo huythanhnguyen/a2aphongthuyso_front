@@ -2,8 +2,8 @@ import axios from 'axios'
 
 // Cấu hình API
 const API_CONFIG = {
-  // Luôn sử dụng URL production với tiền tố /api/v2
-  API_BASE_URL: 'https://phongthuybotbackend.onrender.com/api/v2',
+  // Sử dụng URL mới cho tất cả các yêu cầu
+  API_BASE_URL: 'https://phongthuybotadk.onrender.com',
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
@@ -98,10 +98,6 @@ adkClient.interceptors.request.use(
     const token = localStorage.getItem('phone_analysis_token')
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
-    }
-    // Điều chỉnh URL để sử dụng endpoint đúng cho chat
-    if (config.url.includes('/chat')) {
-      config.baseURL = API_CONFIG.ADK_SERVICE_URL;
     }
     return config
   },
