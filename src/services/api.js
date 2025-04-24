@@ -2,8 +2,8 @@ import axios from 'axios'
 
 // Cấu hình API
 const API_CONFIG = {
-  // Sử dụng URL mới cho tất cả các yêu cầu
-  API_BASE_URL: 'https://phongthuybotadk.onrender.com',
+  // Luôn sử dụng URL production với tiền tố /api/v2
+  API_BASE_URL: 'https://phongthuybotbackend.onrender.com/api/v2',
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
@@ -27,16 +27,16 @@ const API_CONFIG = {
     DELETE_HISTORY: '/agent/query'
   },
   PHONE: {
-    ANALYZE: '/analyze/phone'
+    ANALYZE: '/bat-cuc-linh-so/phone'
   },
   CCCD: {
-    ANALYZE: '/analyze/cccd'
+    ANALYZE: '/bat-cuc-linh-so/cccd'
   },
   PASSWORD: {
-    ANALYZE: '/analyze/password'
+    ANALYZE: '/bat-cuc-linh-so/password'
   },
   BANK_ACCOUNT: {
-    ANALYZE: '/analyze/bank-account',
+    ANALYZE: '/bat-cuc-linh-so/bank-account',
     SUGGEST: '/bat-cuc-linh-so/suggest-bank-account'
   },
   HEALTH: {
@@ -44,8 +44,8 @@ const API_CONFIG = {
   },
   AGENT: {
     ROOT: '/agent',
-    CHAT: '/chat',
-    STREAM: '/stream',
+    CHAT: '/agent/chat',
+    STREAM: '/agent/stream',
     QUERY: '/agent/query'
   },
   BAT_CUC_LINH_SO: {
@@ -58,7 +58,7 @@ const API_CONFIG = {
     STATUS: '/payments/status'
   },
   REQUEST_TIMEOUT: 15000,
-  ADK_SERVICE_URL: 'https://phongthuybotadk.onrender.com'
+  ADK_SERVICE_URL: 'http://localhost:10000'
 }
 
 // Tạo instance axios
@@ -70,30 +70,8 @@ const apiClient = axios.create({
   }
 })
 
-// Tạo instance axios cho ADK service
-const adkClient = axios.create({
-  baseURL: API_CONFIG.ADK_SERVICE_URL,
-  timeout: API_CONFIG.REQUEST_TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json',
-  }
-})
-
 // Interceptors để thêm token vào mỗi request
 apiClient.interceptors.request.use(
-  config => {
-    const token = localStorage.getItem('phone_analysis_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
-  },
-  error => {
-    return Promise.reject(error)
-  }
-)
-
-adkClient.interceptors.request.use(
   config => {
     const token = localStorage.getItem('phone_analysis_token')
     if (token) {
@@ -137,34 +115,4 @@ apiClient.interceptors.response.use(
   }
 )
 
-adkClient.interceptors.response.use(
-  response => {
-    return response.data
-  },
-  error => {
-    // Kiểm tra lỗi 401 Unauthorized
-    if (error.response && error.response.status === 401) {
-      // Xóa thông tin đăng nhập
-      localStorage.removeItem('phone_analysis_token')
-      localStorage.removeItem('phone_analysis_user')
-      
-      // Chuyển hướng đến trang đăng nhập
-      if (window.location.pathname !== '/login') {
-        window.location.href = '/login'
-      }
-    }
-    
-    // Tạo thông báo lỗi chi tiết hơn
-    const errorMessage = 
-      (error.response && error.response.data && error.response.data.message) ||
-      error.message ||
-      'Đã xảy ra lỗi khi kết nối đến máy chủ';
-    
-    // Thông tin bổ sung cho debug
-    console.error(`ADK API Error [${error.config?.method}] ${error.config?.url}:`, error.response || error.message);
-    
-    return Promise.reject(new Error(errorMessage))
-  }
-)
-
-export { apiClient, adkClient, API_CONFIG }
+export { apiClient, API_CONFIG }
