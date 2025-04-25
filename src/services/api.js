@@ -2,63 +2,45 @@ import axios from 'axios'
 
 // Cấu hình API
 const API_CONFIG = {
-  // Luôn sử dụng URL production với tiền tố /api/v2
-  API_BASE_URL: 'https://phongthuybotbackend.onrender.com/api/v2',
+  // Sử dụng biến môi trường cho base URL
+  API_BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000',
   AUTH: {
-    LOGIN: '/auth/login',
-    REGISTER: '/auth/register',
-    LOGOUT: '/auth/logout',
-    VERIFY_TOKEN: '/auth/me',
-    CHANGE_PASSWORD: '/auth/change-password'
+    LOGIN: '/api/user/token',
+    REGISTER: '/api/user/register',
+    VERIFY_TOKEN: '/api/user/me',
+    CHANGE_PASSWORD: '/api/user/me'
   },
   USER: {
-    PROFILE: '/users/profile',
-    UPDATE_PROFILE: '/users/profile',
-    REMAINING_QUESTIONS: '/agent/query',
-    GET_INFO_BY_PHONE: '/users/by-phone'
+    PROFILE: '/api/user/me',
+    UPDATE_PROFILE: '/api/user/me'
   },
   ANALYSIS: {
-    ANALYZE: '/bat-cuc-linh-so/analyze',
-    HISTORY: '/agent/query',
-    FEEDBACK: '/agent/query',
-    RECENT: '/agent/query',
-    QUESTION: '/agent/chat',
-    STREAM: '/agent/stream',
-    DELETE_HISTORY: '/agent/query'
+    ANALYZE_NUMBER: '/analyze_number',
+    CHAT: '/api/chat',
+    STREAM: '/api/chat'
   },
-  PHONE: {
-    ANALYZE: '/bat-cuc-linh-so/phone'
+  UPLOAD: {
+    FILE: '/api/upload'
   },
-  CCCD: {
-    ANALYZE: '/bat-cuc-linh-so/cccd'
+  API_KEYS: {
+    CREATE: '/api/apikeys',
+    LIST: '/api/apikeys',
+    DELETE: '/api/apikeys'
   },
-  PASSWORD: {
-    ANALYZE: '/bat-cuc-linh-so/password'
-  },
-  BANK_ACCOUNT: {
-    ANALYZE: '/bat-cuc-linh-so/bank-account',
-    SUGGEST: '/bat-cuc-linh-so/suggest-bank-account'
+  PAYMENT: {
+    PLANS: '/api/payment/plans',
+    PLAN_DETAIL: '/api/payment/plans',
+    CREATE: '/api/payment',
+    HISTORY: '/api/payment/history',
+    SUBSCRIPTION: '/api/payment/subscription'
   },
   HEALTH: {
     CHECK: '/health'
   },
-  AGENT: {
-    ROOT: '/agent',
-    CHAT: '/agent/chat',
-    STREAM: '/agent/stream',
-    QUERY: '/agent/query'
+  AGENTS: {
+    LIST: '/agents'
   },
-  BAT_CUC_LINH_SO: {
-    ROOT: '/bat-cuc-linh-so'
-  },
-  PAYMENT: {
-    CREATE: '/payments/create',
-    HISTORY: '/payments/payment/history',
-    CALLBACK: '/payments/callback',
-    STATUS: '/payments/status'
-  },
-  REQUEST_TIMEOUT: 15000,
-  ADK_SERVICE_URL: 'http://localhost:10000'
+  REQUEST_TIMEOUT: parseInt(import.meta.env.VITE_API_TIMEOUT || '15000')
 }
 
 // Tạo instance axios
@@ -104,6 +86,7 @@ apiClient.interceptors.response.use(
     
     // Tạo thông báo lỗi chi tiết hơn
     const errorMessage = 
+      (error.response && error.response.data && error.response.data.detail) ||
       (error.response && error.response.data && error.response.data.message) ||
       error.message ||
       'Đã xảy ra lỗi khi kết nối đến máy chủ';

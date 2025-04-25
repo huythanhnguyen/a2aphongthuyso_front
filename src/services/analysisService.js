@@ -10,29 +10,21 @@ const analysisService = {
     try {
       console.log('Sending phone analysis request with:', phoneNumber);
       
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.PHONE.ANALYZE);
-      console.log('Using cleaned endpoint:', endpoint);
-      
       // Sử dụng endpoint mới cho phân tích số điện thoại
-      const response = await apiClient.post(endpoint, { phoneNumber });
+      const response = await apiClient.get(API_CONFIG.ANALYSIS.ANALYZE_NUMBER, {
+        params: { number: phoneNumber }
+      });
       console.log('Phone analysis response:', response);
 
-      if (!response.success) {
-        throw new Error(response.message || 'Không thể phân tích số điện thoại');
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể phân tích số điện thoại');
       }
       
-      // Đảm bảo có trường content để hiển thị
-      if (!response.content && response.result) {
-        if (response.result.analysis) {
-          response.content = response.result.analysis;
-          response.analysisData = response.result;
-        } else {
-          response.content = 'Đã phân tích số điện thoại.';
-        }
-      }
-      
-      return response;
+      return {
+        success: true,
+        content: response.content || 'Đã phân tích số điện thoại.',
+        analysisData: response
+      };
     } catch (error) {
       console.error('Error analyzing phone number:', error)
       return { 
@@ -44,12 +36,54 @@ const analysisService = {
   },
   
   /**
-   * Xử lý endpoint để loại bỏ prefix /api không cần thiết
-   * @param {string} endpoint - endpoint gốc
-   * @returns {string} - endpoint đã xử lý
+   * Phân tích CCCD/CMND, mật khẩu, tài khoản ngân hàng bằng chat API
+   * @param {string} type - Loại phân tích (cccd, password, bank)
+   * @param {string} value - Giá trị cần phân tích
+   * @returns {Promise} - Kết quả phân tích
    */
-  _cleanEndpoint(endpoint) {
-    return endpoint.replace('/api', '');
+  async analyzeViaChat(type, value) {
+    try {
+      // Tạo nội dung tin nhắn dựa vào loại phân tích
+      let message = '';
+      switch (type) {
+        case 'cccd':
+          message = `Phân tích số CCCD/CMND: ${value}`;
+          break;
+        case 'password':
+          message = `Phân tích mật khẩu: ${value}`;
+          break;
+        case 'bank':
+          message = `Phân tích số tài khoản ngân hàng: ${value}`;
+          break;
+        default:
+          throw new Error('Loại phân tích không hợp lệ');
+      }
+      
+      // Sử dụng API chat cho phân tích
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message,
+        context: { analysis_type: type, value }
+      });
+      
+      console.log(`${type} analysis response:`, response);
+
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || `Không thể phân tích ${type}`);
+      }
+      
+      return {
+        success: true,
+        content: response.content || `Đã phân tích ${type}.`,
+        analysisData: response
+      };
+    } catch (error) {
+      console.error(`Error analyzing ${type}:`, error)
+      return { 
+        success: false, 
+        message: error.message,
+        error: error.message
+      }
+    }
   },
   
   /**
@@ -58,40 +92,7 @@ const analysisService = {
    * @returns {Promise} - Kết quả phân tích
    */
   async analyzeCCCD(cccdNumber) {
-    try {
-      console.log('Sending CCCD analysis request with:', cccdNumber);
-      
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.CCCD.ANALYZE);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      // Sử dụng endpoint mới cho phân tích CCCD
-      const response = await apiClient.post(endpoint, { cccdNumber });
-      console.log('CCCD analysis response:', response);
-
-      if (!response.success) {
-        throw new Error(response.message || 'Không thể phân tích số CCCD/CMND');
-      }
-      
-      // Đảm bảo có trường content để hiển thị
-      if (!response.content && response.result) {
-        if (response.result.content) {
-          response.content = response.result.content;
-          response.analysisData = response.result;
-        } else {
-          response.content = 'Đã phân tích số CCCD/CMND.';
-        }
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('Error analyzing CCCD:', error)
-      return { 
-        success: false, 
-        message: error.message,
-        error: error.message
-      }
-    }
+    return this.analyzeViaChat('cccd', cccdNumber);
   },
   
   /**
@@ -100,37 +101,7 @@ const analysisService = {
    * @returns {Promise} - Kết quả phân tích
    */
   async analyzePassword(password) {
-    try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.PASSWORD.ANALYZE);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      // Sử dụng endpoint mới cho phân tích mật khẩu
-      const response = await apiClient.post(endpoint, { password });
-
-      if (!response.success) {
-        throw new Error(response.message || 'Không thể phân tích mật khẩu');
-      }
-      
-      // Đảm bảo có trường content để hiển thị
-      if (!response.content && response.result) {
-        if (response.result.analysis) {
-          response.content = response.result.analysis.recommendation;
-          response.analysisData = response.result;
-        } else {
-          response.content = 'Đã phân tích mật khẩu.';
-        }
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('Error analyzing password:', error)
-      return { 
-        success: false, 
-        message: error.message,
-        error: error.message
-      }
-    }
+    return this.analyzeViaChat('password', password);
   },
   
   /**
@@ -139,37 +110,7 @@ const analysisService = {
    * @returns {Promise} - Kết quả phân tích
    */
   async analyzeBankAccount(accountNumber) {
-    try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.BANK_ACCOUNT.ANALYZE);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      // Sử dụng endpoint mới cho phân tích số tài khoản
-      const response = await apiClient.post(endpoint, { accountNumber });
-
-      if (!response.success) {
-        throw new Error(response.message || 'Không thể phân tích số tài khoản');
-      }
-      
-      // Đảm bảo có trường content để hiển thị
-      if (!response.content && response.result) {
-        if (response.result.analysis) {
-          response.content = response.result.analysis.recommendation;
-          response.analysisData = response.result;
-        } else {
-          response.content = 'Đã phân tích số tài khoản.';
-        }
-      }
-      
-      return response;
-    } catch (error) {
-      console.error('Error analyzing bank account:', error)
-      return { 
-        success: false, 
-        message: error.message,
-        error: error.message
-      }
-    }
+    return this.analyzeViaChat('bank', accountNumber);
   },
   
   /**
@@ -180,21 +121,29 @@ const analysisService = {
    */
   async suggestBankAccount(purpose, preferredDigits = []) {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.BANK_ACCOUNT.SUGGEST);
-      console.log('Using cleaned endpoint:', endpoint);
+      // Sử dụng API chat để gợi ý số tài khoản
+      const message = `Gợi ý số tài khoản ngân hàng cho mục đích: ${purpose}` +
+        (preferredDigits.length > 0 ? ` với các chữ số ưa thích: ${preferredDigits.join(', ')}` : '');
       
-      // Sử dụng endpoint mới cho gợi ý số tài khoản
-      const response = await apiClient.post(endpoint, { 
-        purpose, 
-        preferredDigits 
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message,
+        context: { 
+          request_type: 'bank_suggestion', 
+          purpose,
+          preferred_digits: preferredDigits 
+        }
       });
 
-      if (!response.success) {
-        throw new Error(response.message || 'Không thể gợi ý số tài khoản');
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể gợi ý số tài khoản');
       }
       
-      return response;
+      return {
+        success: true,
+        content: response.content || 'Đã gợi ý số tài khoản ngân hàng.',
+        suggestions: response.metadata?.suggestions || [],
+        analysisData: response
+      };
     } catch (error) {
       console.error('Error suggesting bank account:', error)
       return { 
@@ -207,37 +156,43 @@ const analysisService = {
   
   /**
    * Lấy lịch sử phân tích
-   * @param {number} limit - Số lượng tối đa bản ghi
-   * @param {number} page - Số trang
+   * @param {number} limit - Giới hạn số kết quả
+   * @param {number} page - Trang hiện tại
    * @returns {Promise} - Lịch sử phân tích
    */
   async getAnalysisHistory(limit = 20, page = 1) {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.ANALYSIS.HISTORY);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      // Sử dụng endpoint mới cho lấy lịch sử qua agent API
-      const response = await apiClient.post(endpoint, {
-        agentType: "batcuclinh_so",
-        query: `Lấy lịch sử phân tích, giới hạn ${limit} kết quả, trang ${page}`
+      // Sử dụng API chat để lấy lịch sử phân tích
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message: 'Lấy lịch sử phân tích của tôi',
+        context: { 
+          request_type: 'history',
+          limit,
+          page
+        }
       });
       
-      if (!response.success) {
-        throw new Error(response.message || 'Không thể lấy lịch sử phân tích');
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể lấy lịch sử phân tích');
       }
       
-      // Chuẩn hóa dữ liệu phản hồi
-      if (response.result && response.result.history) {
-        response.data = response.result.history;
-      } else {
-        response.data = [];
-      }
-      
-      return response;
+      return {
+        success: true,
+        history: response.metadata?.history || [],
+        pagination: response.metadata?.pagination || {
+          total: 0,
+          page,
+          limit,
+          totalPages: 0
+        }
+      };
     } catch (error) {
-      console.error('Error getting analysis history:', error)
-      return { success: false, message: error.message, data: [] }
+      console.error('Error getting analysis history:', error);
+      return {
+        success: false,
+        message: error.message,
+        history: []
+      };
     }
   },
   
@@ -247,136 +202,193 @@ const analysisService = {
    */
   async deleteAnalysisHistory() {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.ANALYSIS.DELETE_HISTORY);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      // Sử dụng endpoint mới cho xóa lịch sử qua agent API
-      const response = await apiClient.post(endpoint, {
-        agentType: "batcuclinh_so",
-        query: "Xóa toàn bộ lịch sử phân tích của tôi"
+      // Sử dụng API chat để xóa lịch sử phân tích
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message: 'Xóa lịch sử phân tích của tôi',
+        context: { request_type: 'delete_history' }
       });
-      return response;
+      
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể xóa lịch sử phân tích');
+      }
+      
+      return {
+        success: true,
+        message: 'Đã xóa lịch sử phân tích thành công'
+      };
     } catch (error) {
-      console.error('Error deleting analysis history:', error)
-      return { success: false, message: error.message }
+      console.error('Error deleting analysis history:', error);
+      return {
+        success: false,
+        message: error.message
+      };
     }
   },
   
   /**
-   * Đặt câu hỏi về phân tích số điện thoại
-   * @param {Object} payload - Dữ liệu câu hỏi
-   * @returns {Promise} - Kết quả câu hỏi
+   * Đặt câu hỏi phân tích
+   * @param {Object} payload - Nội dung câu hỏi
+   * @returns {Promise} - Kết quả trả lời
    */
   async askQuestion(payload) {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.CHAT);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      const response = await apiClient.post(endpoint, {
-        message: payload.question,
-        sessionId: payload.sessionId || undefined,
-        userId: payload.userId || undefined,
-        metadata: payload.metadata || undefined
+      // Sử dụng API chat để đặt câu hỏi
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message: payload.message,
+        context: payload.context || {}
       });
-      return response;
+      
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể xử lý câu hỏi');
+      }
+      
+      return {
+        success: true,
+        content: response.content,
+        agent: response.agent,
+        metadata: response.metadata || {}
+      };
     } catch (error) {
-      console.error('Error asking question:', error)
-      return { success: false, message: error.message }
+      console.error('Error asking question:', error);
+      return {
+        success: false,
+        message: error.message
+      };
     }
   },
   
   /**
-   * Gửi phản hồi về phân tích
-   * @param {string} analysisId - ID phân tích
+   * Gửi phản hồi về kết quả phân tích
+   * @param {string} analysisId - ID của kết quả phân tích
    * @param {string} feedbackType - Loại phản hồi (positive/negative)
-   * @param {string} comment - Bình luận phản hồi
+   * @param {string} comment - Nội dung phản hồi
    * @returns {Promise} - Kết quả gửi phản hồi
    */
   async sendFeedback(analysisId, feedbackType, comment = '') {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.ANALYSIS.FEEDBACK);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      // Sử dụng endpoint mới cho gửi phản hồi qua agent API
-      const response = await apiClient.post(endpoint, {
-        agentType: "batcuclinh_so",
-        query: `Gửi phản hồi cho phân tích ${analysisId}: ${feedbackType}, comment: ${comment}`
+      // Sử dụng API chat để gửi phản hồi
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message: `Phản hồi về kết quả phân tích: ${comment}`,
+        context: {
+          request_type: 'feedback',
+          analysis_id: analysisId,
+          feedback_type: feedbackType,
+          comment
+        }
       });
-      return response;
+      
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể gửi phản hồi');
+      }
+      
+      return {
+        success: true,
+        message: 'Đã gửi phản hồi thành công'
+      };
     } catch (error) {
-      console.error('Error sending feedback:', error)
-      return { success: false, message: error.message }
+      console.error('Error sending feedback:', error);
+      return {
+        success: false,
+        message: error.message
+      };
     }
   },
   
   /**
    * Lấy các phân tích gần đây
-   * @param {number} limit - Số lượng tối đa bản ghi
+   * @param {number} limit - Giới hạn số kết quả
    * @returns {Promise} - Các phân tích gần đây
    */
   async getRecentAnalyses(limit = 5) {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.ANALYSIS.RECENT);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      // Sử dụng endpoint mới cho lấy phân tích gần đây qua agent API
-      const response = await apiClient.post(endpoint, {
-        agentType: "batcuclinh_so",
-        query: `Lấy ${limit} phân tích gần đây nhất`
+      // Sử dụng API chat để lấy phân tích gần đây
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message: 'Lấy các phân tích gần đây của tôi',
+        context: {
+          request_type: 'recent',
+          limit
+        }
       });
       
-      if (!response.success && response.result) {
-        response.success = response.result.success;
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể lấy phân tích gần đây');
       }
       
-      // Chuẩn hóa dữ liệu phản hồi
-      if (response.result && response.result.recentAnalyses) {
-        response.data = response.result.recentAnalyses;
-      } else {
-        response.data = [];
+      let recentAnalyses = [];
+      
+      if (response.metadata && response.metadata.recent_analyses) {
+        recentAnalyses = response.metadata.recent_analyses;
+      } else if (response.content) {
+        // Nếu không có metadata, thử phân tích nội dung
+        recentAnalyses = [{
+          id: 'recent',
+          type: 'unknown',
+          timestamp: new Date().toISOString(),
+          content: response.content
+        }];
       }
       
-      return response;
+      return {
+        success: true,
+        recent: recentAnalyses
+      };
     } catch (error) {
-      console.error('Error getting recent analyses:', error)
-      return { success: false, message: error.message, data: [] }
+      console.error('Error getting recent analyses:', error);
+      return {
+        success: false,
+        message: error.message,
+        recent: []
+      };
     }
   },
-
+  
   /**
-   * Tạo phiên hội thoại mới
+   * Tạo phiên mới
    * @returns {Promise} - Thông tin phiên mới
    */
   async createNewSession() {
     try {
-      // Không ghép API_BASE_URL + API_CONFIG.AGENT.CHAT vì apiClient đã có baseURL
-      console.log('Creating new session with URL:', API_CONFIG.AGENT.CHAT);
-      
-      // Trích xuất endpoint không có prefix /api
-      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.CHAT);
-      console.log('Using cleaned endpoint:', endpoint);
-      
-      // Sử dụng endpoint đã loại bỏ phần /api
-      const response = await apiClient.post(endpoint, {
-        message: "Bắt đầu phiên phân tích mới",
+      // Tạo phiên mới qua API chat
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message: 'Tạo phiên mới',
+        context: { request_type: 'new_session' }
       });
       
-      console.log('Create session response:', response);
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể tạo phiên mới');
+      }
+      
+      let sessionId = null;
+      
+      // Thử lấy sessionId từ metadata
+      if (response.metadata && response.metadata.session_id) {
+        sessionId = response.metadata.session_id;
+      } else if (response.metadata && response.metadata.sessionId) {
+        sessionId = response.metadata.sessionId;
+      } else {
+        // Nếu không có sessionId, tạo một cái ngẫu nhiên
+        sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      }
       
       return {
         success: true,
-        sessionId: response.result?.sessionId || response.sessionId || null
+        sessionId,
+        message: 'Đã tạo phiên mới thành công'
       };
     } catch (error) {
       console.error('Error creating new session:', error);
-      throw error;
+      // Tạo một sessionId ngẫu nhiên nếu API fail
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+      
+      return {
+        success: true,
+        sessionId,
+        message: 'Đã tạo phiên mới thành công (offline mode)',
+        isOffline: true
+      };
     }
   },
-
+  
   /**
    * Lấy thông tin người dùng từ số điện thoại
    * @param {string} phoneNumber - Số điện thoại
@@ -384,263 +396,281 @@ const analysisService = {
    */
   async getUserInfoFromPhoneNumber(phoneNumber) {
     try {
-      const response = await apiClient.get(API_CONFIG.USER.GET_INFO_BY_PHONE, {
-        params: {
-          phoneNumber
+      // Sử dụng API chat để lấy thông tin người dùng từ số điện thoại
+      const response = await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+        message: `Lấy thông tin người dùng từ số điện thoại: ${phoneNumber}`,
+        context: {
+          request_type: 'user_info_by_phone',
+          phone_number: phoneNumber
         }
-      })
+      });
       
-      if (!response.success) {
-        throw new Error(response.message || 'Không tìm thấy thông tin người dùng')
+      if (!response || response.status === 'error') {
+        throw new Error(response?.detail || 'Không thể lấy thông tin người dùng');
       }
       
-      return response
+      let userInfo = null;
+      
+      if (response.metadata && response.metadata.user_info) {
+        userInfo = response.metadata.user_info;
+      } else {
+        userInfo = {
+          phone: phoneNumber,
+          message: 'Không tìm thấy thông tin chi tiết'
+        };
+      }
+      
+      return {
+        success: true,
+        userInfo
+      };
     } catch (error) {
-      console.error('Error getting user info from phone number:', error)
+      console.error('Error getting user info from phone number:', error);
       return {
         success: false,
-        message: 'Không thể lấy thông tin người dùng từ số điện thoại',
-        error: error.message
-      }
+        message: error.message
+      };
     }
   },
-
+  
   /**
-   * Gửi tin nhắn đến Agent và nhận phản hồi dạng stream (Server-Sent Events)
+   * Nhận phản hồi stream từ API
    * @param {string} message - Nội dung tin nhắn
-   * @param {string} sessionId - ID phiên (optional)
-   * @param {Object} metadata - Metadata (optional)
-   * @param {Function} onChunk - Callback xử lý mỗi chunk dữ liệu
-   * @param {Function} onComplete - Callback khi stream hoàn tất
+   * @param {string} sessionId - ID phiên
+   * @param {Object} metadata - Metadata bổ sung
+   * @param {Function} onChunk - Callback khi nhận được một phần dữ liệu
+   * @param {Function} onComplete - Callback khi hoàn thành
    * @param {Function} onError - Callback khi có lỗi
-   * @returns {Promise} - Đối tượng AbortController để hủy stream
+   * @returns {Promise} - Promise chờ hoàn thành stream
    */
   async streamChat(message, sessionId, metadata, onChunk, onComplete, onError) {
     try {
-      const controller = new AbortController();
-      const signal = controller.signal;
+      // Tạo URL cho stream API
+      const url = `${API_CONFIG.API_BASE_URL}${API_CONFIG.ANALYSIS.STREAM}?session_id=${sessionId}`;
       
-      // Trích xuất endpoint không có prefix /api
-      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.STREAM);
+      // Bắt đầu kết nối SSE
+      const eventSource = new EventSource(url);
       
-      // Log để debug
-      console.log('Stream chat request:', {
-        message,
-        sessionId,
-        metadata,
-        originalEndpoint: API_CONFIG.AGENT.STREAM,
-        cleanedEndpoint: endpoint,
-        fullUrl: `${API_CONFIG.API_BASE_URL}${endpoint}`
-      });
+      // Biến lưu nội dung tích lũy
+      let accumulatedText = '';
       
-      // Sử dụng URL đầy đủ để gọi API - trực tiếp không qua axios
-      const apiUrl = `${API_CONFIG.API_BASE_URL}${endpoint}`;
-
-      fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('phone_analysis_token')}`,
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-          message,
-          sessionId,
-          metadata
-        }),
-        signal
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        // Hàm đọc dữ liệu từ stream
-        function readStream() {
-          reader.read().then(({ done, value }) => {
-            if (done) {
-              // Xử lý bất kỳ dữ liệu còn lại trong buffer
-              if (buffer.trim()) {
-                processChunks(buffer);
-              }
-              if (onComplete) onComplete();
-              return;
+      // Xử lý sự kiện message
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          // Xử lý từng chunk dữ liệu
+          if (data && data.content) {
+            accumulatedText += data.content;
+            
+            // Gọi callback onChunk
+            if (onChunk && typeof onChunk === 'function') {
+              onChunk(data);
             }
-
-            // Decode và xử lý dữ liệu
-            const chunk = decoder.decode(value, { stream: true });
-            buffer += chunk;
-
-            // Xử lý từng dòng SSE "data: {...}"
-            let lines = buffer.split('\n\n');
-            buffer = lines.pop() || ''; // Giữ phần còn lại cho lần đọc tiếp theo
-
-            processChunks(lines.join('\n\n'));
-            readStream();
-          }).catch(err => {
-            if (err.name === 'AbortError') {
-              console.log('Stream was aborted');
-            } else if (onError) {
-              onError(err);
-            }
-          });
-        }
-
-        // Xử lý các chunks
-        function processChunks(text) {
-          const lines = text.split('\n\n');
-          for (let line of lines) {
-            if (line.startsWith('data: ')) {
-              try {
-                const data = JSON.parse(line.substring(6));
-                if (data.type === 'chunk' && onChunk) {
-                  onChunk(data.content);
-                } else if (data.type === 'error' && onError) {
-                  onError(new Error(data.error || 'Unknown stream error'));
-                } else if (data.type === 'complete' && onComplete) {
-                  onComplete();
-                }
-              } catch (e) {
-                console.error('Error parsing SSE data:', e, line);
+            
+            // Nếu là chunk cuối cùng
+            if (data.is_final) {
+              // Đóng kết nối
+              eventSource.close();
+              
+              // Gọi callback onComplete
+              if (onComplete && typeof onComplete === 'function') {
+                onComplete({
+                  success: true,
+                  content: accumulatedText,
+                  metadata: data.metadata || {}
+                });
               }
             }
           }
+        } catch (parseError) {
+          console.error('Error parsing SSE data:', parseError, event.data);
+          if (onError && typeof onError === 'function') {
+            onError(new Error('Lỗi xử lý dữ liệu từ server'));
+          }
         }
-
-        readStream();
-      })
-      .catch(err => {
-        console.error('Stream fetch error:', err);
-        if (onError) onError(err);
+      };
+      
+      // Xử lý sự kiện error
+      eventSource.onerror = (error) => {
+        console.error('SSE connection error:', error);
+        eventSource.close();
+        
+        if (onError && typeof onError === 'function') {
+          onError(new Error('Lỗi kết nối đến server'));
+        }
+      };
+      
+      // Gửi message nếu có
+      if (message) {
+        // Gửi message qua POST API
+        await apiClient.post(API_CONFIG.ANALYSIS.CHAT, {
+          message,
+          context: {
+            session_id: sessionId,
+            ...metadata
+          }
+        });
+      }
+      
+      // Trả về promise để có thể chờ hoàn thành nếu cần
+      return new Promise((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          eventSource.close();
+          reject(new Error('Timeout waiting for stream response'));
+        }, API_CONFIG.REQUEST_TIMEOUT);
+        
+        // Override onComplete để resolve promise
+        const originalOnComplete = onComplete;
+        onComplete = (data) => {
+          clearTimeout(timeoutId);
+          if (originalOnComplete) originalOnComplete(data);
+          resolve(data);
+        };
+        
+        // Override onError để reject promise
+        const originalOnError = onError;
+        onError = (error) => {
+          clearTimeout(timeoutId);
+          if (originalOnError) originalOnError(error);
+          reject(error);
+        };
       });
-
-      return controller; // Trả về controller để có thể hủy stream nếu cần
     } catch (error) {
-      console.error('Stream function error:', error);
-      if (onError) onError(error);
-      return null;
+      console.error('Error in streamChat:', error);
+      if (onError && typeof onError === 'function') {
+        onError(error);
+      }
+      throw error;
     }
   },
-
-  // Phương thức mới: kiểm tra sức khỏe API
+  
+  /**
+   * Kiểm tra trạng thái hoạt động của API
+   * @returns {Promise} - Trạng thái hoạt động
+   */
   async checkHealth() {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.HEALTH.CHECK);
-      console.log('Using cleaned endpoint:', endpoint);
+      const response = await apiClient.get(API_CONFIG.HEALTH.CHECK);
       
-      const response = await apiClient.get(endpoint);
       return {
         success: true,
-        status: response.status,
-        message: response.message,
-        version: response.version,
-        adkEnabled: response.adkEnabled
+        status: response.status || 'healthy',
+        version: response.version || 'unknown',
+        message: 'API server đang hoạt động bình thường'
       };
     } catch (error) {
-      console.error('Error checking API health:', error);
+      console.error('Health check error:', error);
       return {
         success: false,
-        status: 'error',
-        message: error.message
+        status: 'unhealthy',
+        message: 'API server không phản hồi hoặc đang gặp vấn đề'
       };
     }
   },
-
-  // Phương thức mới: lấy thông tin về API
+  
+  /**
+   * Lấy thông tin về API
+   * @returns {Promise} - Thông tin API
+   */
   async getAPIInfo() {
     try {
-      const response = await apiClient.get('/');
+      // Sử dụng health check để lấy thông tin API
+      const healthCheck = await this.checkHealth();
+      
       return {
         success: true,
-        ...response
+        apiInfo: {
+          version: healthCheck.version,
+          status: healthCheck.status,
+          baseUrl: API_CONFIG.API_BASE_URL
+        }
       };
     } catch (error) {
-      console.error('Error getting API info:', error);
+      console.error('Get API info error:', error);
       return {
         success: false,
         message: error.message
       };
     }
   },
-
-  // Phương thức mới: lấy thông tin về Root Agent API
+  
+  /**
+   * Lấy thông tin về Root Agent
+   * @returns {Promise} - Thông tin Root Agent
+   */
   async getRootAgentInfo() {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.ROOT);
-      console.log('Using cleaned endpoint:', endpoint);
+      // Sử dụng API agents để lấy thông tin
+      const response = await apiClient.get(API_CONFIG.AGENTS.LIST);
       
-      const response = await apiClient.get(endpoint);
-      return response;
+      return {
+        success: true,
+        agentInfo: response.agents || []
+      };
     } catch (error) {
-      console.error('Error getting Root Agent info:', error);
+      console.error('Get Root Agent info error:', error);
       return {
         success: false,
-        message: error.message
+        message: error.message,
+        agentInfo: []
       };
     }
   },
-
-  // Phương thức mới: lấy thông tin về Bát Cục Linh Số API
+  
+  /**
+   * Lấy thông tin về BatCucLinhSo Agent
+   * @returns {Promise} - Thông tin BatCucLinhSo Agent
+   */
   async getBatCucLinhSoInfo() {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.BAT_CUC_LINH_SO.ROOT);
-      console.log('Using cleaned endpoint:', endpoint);
+      // Sử dụng API agents để lấy thông tin
+      const response = await apiClient.get(API_CONFIG.AGENTS.LIST);
       
-      const response = await apiClient.get(endpoint);
-      return response;
+      // Tìm thông tin về BatCucLinhSo Agent
+      const allAgents = response.agents || [];
+      const batCucLinhSoAgent = allAgents.find(agent => 
+        agent.type === 'batcuclinh_so' || 
+        (agent.sub_agents && agent.sub_agents.some(sub => sub.type === 'batcuclinh_so'))
+      );
+      
+      return {
+        success: true,
+        agentInfo: batCucLinhSoAgent || null
+      };
     } catch (error) {
-      console.error('Error getting Bát Cục Linh Số info:', error);
+      console.error('Get BatCucLinhSo Agent info error:', error);
       return {
         success: false,
-        message: error.message
+        message: error.message,
+        agentInfo: null
       };
     }
   },
-
+  
   /**
-   * Lấy số câu hỏi còn lại của người dùng trong ngày
-   * @returns {Promise} - Số câu hỏi còn lại
+   * Lấy số lượt phân tích còn lại
+   * @returns {Promise} - Số lượt phân tích còn lại
    */
   async getRemainingQuestions() {
     try {
-      // Loại bỏ prefix /api từ endpoint
-      const endpoint = this._cleanEndpoint(API_CONFIG.AGENT.QUERY);
-      console.log('Using cleaned endpoint:', endpoint);
+      // Sử dụng API user/me để lấy thông tin
+      const response = await apiClient.get(API_CONFIG.USER.PROFILE);
       
-      // Sử dụng endpoint query mới
-      const response = await apiClient.post(endpoint, {
-        agentType: "batcuclinh_so",
-        query: "Lấy số câu hỏi còn lại của tôi"
-      });
-      
-      if (response.success && response.result) {
-        // Nếu có trường remainingQuestions trong kết quả, sử dụng nó
-        if (response.result.remainingQuestions !== undefined) {
-          response.remainingQuestions = response.result.remainingQuestions;
-        } else {
-          // Giá trị mặc định
-          response.remainingQuestions = 10;
-        }
-      }
-      
-      return response;
+      return {
+        success: true,
+        remaining: response.quota_remaining || 0,
+        isPremium: response.is_premium || false
+      };
     } catch (error) {
-      console.error('Error getting remaining questions:', error)
-      return { 
-        success: false, 
-        message: 'Không thể lấy thông tin số câu hỏi còn lại',
-        error: error.message,
-        remainingQuestions: 10 // Giá trị mặc định
-      }
+      console.error('Get remaining questions error:', error);
+      return {
+        success: false,
+        message: error.message,
+        remaining: 0
+      };
     }
-  },
+  }
 }
 
 export default analysisService
